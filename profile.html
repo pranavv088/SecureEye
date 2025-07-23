@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - SecureEye</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap');
+        :root {
+            --primary: #111111;
+            --secondary: #666666;
+            --accent: #FF3366;
+            --background: #FFFFFF;
+            --light-bg: #F8F9FA;
+            --border: #EEEEEE;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        body {
+            background: var(--light-bg);
+            color: var(--primary);
+            min-height: 100vh;
+        }
+        .profile-container {
+            max-width: 400px;
+            margin: 48px auto;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+            padding: 32px 28px 24px 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .profile-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            margin-bottom: 18px;
+            overflow: hidden;
+        }
+        .profile-fields {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .profile-fields input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .profile-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+            width: 100%;
+        }
+        .profile-actions button {
+            flex: 1;
+            padding: 8px 0;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .save-btn {
+            background: var(--accent);
+            color: #fff;
+        }
+        .cancel-btn {
+            background: #eee;
+            color: #333;
+        }
+        .back-btn {
+            position: absolute;
+            left: 24px;
+            top: 24px;
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        .profile-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+        @media (max-width: 500px) {
+            .profile-container {
+                padding: 18px 6px 14px 6px;
+            }
+            .back-btn {
+                left: 8px;
+                top: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" onclick="window.location.href='home.html'">
+        <i class="fas fa-arrow-left"></i> Back
+    </button>
+    <div class="profile-container">
+        <div class="profile-title">Profile</div>
+        <div class="profile-img" id="profileImg"><i class="fas fa-user"></i></div>
+        <form id="profileForm" class="profile-fields">
+            <input id="displayName" type="text" placeholder="Display Name" required />
+            <input id="email" type="email" placeholder="Email" required />
+            <input id="photoURL" type="text" placeholder="Photo URL (optional)" />
+        </form>
+        <div class="profile-actions">
+            <button class="save-btn" id="saveProfileBtn">Save</button>
+            <button class="cancel-btn" id="cancelProfileBtn" type="button">Cancel</button>
+        </div>
+    </div>
+    <script src="firebase-config.js" type="module"></script>
+    <script type="module">
+    import { getAuth, onAuthStateChanged, updateProfile, updateEmail } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
+    import { app } from './firebase-config.js';
+    const auth = getAuth(app);
+    const profileImg = document.getElementById('profileImg');
+    const displayNameInput = document.getElementById('displayName');
+    const emailInput = document.getElementById('email');
+    const photoURLInput = document.getElementById('photoURL');
+    const saveProfileBtn = document.getElementById('saveProfileBtn');
+    const cancelProfileBtn = document.getElementById('cancelProfileBtn');
+    let currentUser = null;
+
+    function renderProfile(user) {
+        if (user.photoURL) {
+            profileImg.innerHTML = `<img src="${user.photoURL}" alt="Profile" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`;
+        } else {
+            profileImg.innerHTML = '<i class="fas fa-user"></i>';
+        }
+        displayNameInput.value = user.displayName || '';
+        emailInput.value = user.email || '';
+        photoURLInput.value = user.photoURL || '';
+    }
+
+    onAuthStateChanged(auth, user => {
+        if (!user) {
+            window.location.href = 'landing.html';
+        } else {
+            currentUser = user;
+            renderProfile(user);
+        }
+    });
+
+    photoURLInput.addEventListener('input', () => {
+        const url = photoURLInput.value.trim();
+        if (url) {
+            profileImg.innerHTML = `<img src="${url}" alt="Profile" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`;
+        } else {
+            profileImg.innerHTML = '<i class=\'fas fa-user\'></i>';
+        }
+    });
+
+    saveProfileBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (!currentUser) return;
+        const displayName = displayNameInput.value.trim();
+        const email = emailInput.value.trim();
+        const photoURL = photoURLInput.value.trim();
+        try {
+            const promises = [];
+            if (currentUser.displayName !== displayName || currentUser.photoURL !== photoURL) {
+                promises.push(updateProfile(currentUser, { displayName, photoURL }));
+            }
+            if (currentUser.email !== email) {
+                promises.push(updateEmail(currentUser, email));
+            }
+            await Promise.all(promises);
+            await currentUser.reload();
+            renderProfile(currentUser);
+            alert('Profile updated successfully!');
+        } catch (err) {
+            alert('Error updating profile: ' + err.message);
+        }
+    });
+
+    cancelProfileBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentUser) renderProfile(currentUser);
+    });
+    </script>
+</body>
+</html> 

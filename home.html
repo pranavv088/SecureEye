@@ -59,15 +59,79 @@
             align-items: center;
             gap: 10px;
         }
-        .profile-img {
-            width: 36px;
-            height: 36px;
+        .profile-info-card {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(90deg, #fff 70%, #ffe3ec 100%);
+            border: 2px solid var(--accent);
+            border-radius: 14px;
+            box-shadow: 0 4px 24px rgba(255,51,102,0.10);
+            padding: 12px 28px 12px 16px;
+            min-width: 280px;
+            margin-right: 10px;
+            transition: box-shadow 0.2s, border 0.2s;
+            cursor: pointer;
+        }
+        .profile-info-card .profile-img {
+            width: 54px;
+            height: 54px;
             border-radius: 50%;
-            background: var(--border);
+            background: #ffe3ec;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 2rem;
+            margin-right: 18px;
+            box-shadow: 0 2px 8px rgba(255,51,102,0.08);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .profile-img input[type="file"] {
+            display: none;
+        }
+        .profile-img:hover::after {
+            content: 'Edit';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255,51,102,0.85);
+            color: #fff;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 2px 0;
+            border-radius: 0 0 50% 50%;
+        }
+        .profile-img.uploading::after {
+            content: 'Uploading...';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255,51,102,0.85);
+            color: #fff;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 2px 0;
+            border-radius: 0 0 50% 50%;
+        }
+        .profile-info-card .profile-details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .profile-info-card .profile-details span:first-child {
+            font-weight: 700;
+            font-size: 1.18rem;
+            color: var(--accent);
+            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+        }
+        .profile-info-card .profile-details span:last-child {
+            font-size: 1rem;
+            color: var(--primary);
+            opacity: 0.85;
         }
         .dashboard {
             display: flex;
@@ -188,8 +252,12 @@
             <a href="#">Settings</a>
         </nav>
         <div class="profile">
-            <div class="profile-img" id="profileImg"><i class="fas fa-user"></i></div>
-            <div class="profile-info" id="profileInfo" style="display:flex;flex-direction:column;align-items:flex-end;margin-right:10px;"></div>
+            <div class="profile-info-card" id="profileInfoCard">
+                <div class="profile-img" id="profileImg"><i class="fas fa-user"></i>
+                    <input type="file" id="profileImgInput" accept="image/*" />
+                </div>
+                <div class="profile-details" id="profileInfo"></div>
+            </div>
             <button class="logout-btn" id="logoutBtn">Logout</button>
         </div>
     </header>
@@ -212,33 +280,92 @@
     </main>
     <script src="firebase-config.js" type="module"></script>
     <script type="module">
-    import { getAuth, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
+    import { getAuth, signOut, onAuthStateChanged, updateProfile } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-storage.js';
     import { app } from './firebase-config.js';
     const auth = getAuth(app);
+    const storage = getStorage(app);
     const logoutBtn = document.getElementById('logoutBtn');
     const profileImg = document.getElementById('profileImg');
+    const profileImgInput = document.getElementById('profileImgInput');
     const profileInfo = document.getElementById('profileInfo');
+    let currentUser = null;
+
+    function renderProfile(user) {
+        // Profile picture
+        if (user.photoURL) {
+            profileImg.innerHTML = `<img src="${user.photoURL}" alt="Profile" style="width:54px;height:54px;border-radius:50%;object-fit:cover;">`;
+        } else {
+            profileImg.innerHTML = '<i class="fas fa-user"></i>';
+        }
+        // Re-append the file input after updating innerHTML
+        if (!profileImg.querySelector('input[type="file"]')) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.id = 'profileImgInput';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+            profileImg.appendChild(fileInput);
+        }
+        // Re-attach event listener
+        profileImg.querySelector('input[type="file"]').addEventListener('change', handleProfileImgUpload);
+        // Show only name and email (not editable)
+        profileInfo.innerHTML = `<span>${user.displayName || 'User'}</span><span>${user.email}</span>`;
+    }
+
     logoutBtn.addEventListener('click', async () => {
         await signOut(auth);
         window.location.href = 'landing.html';
     });
-    // Redirect to login if not authenticated
+
+    // Remove Save/Cancel logic from profileInfo event listener
+    profileInfo.addEventListener('click', async (e) => {
+        // No actions needed for Save/Cancel, so leave empty or remove this listener if not needed
+    });
+
     onAuthStateChanged(auth, user => {
         if (!user) {
             window.location.href = 'landing.html';
         }
-        // Show user profile info
         if (user) {
-            // Profile picture
-            if (user.photoURL) {
-                profileImg.innerHTML = `<img src="${user.photoURL}" alt="Profile" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">`;
-            } else {
-                profileImg.innerHTML = '<i class="fas fa-user"></i>';
-            }
-            // Name and email
-            profileInfo.innerHTML = `<span style="font-weight:600;font-size:1rem;">${user.displayName || 'User'}</span><span style="font-size:0.95rem;color:#666;">${user.email}</span>`;
+            currentUser = user;
+            renderProfile(user);
         }
     });
+
+    // Make entire profile info card clickable to go to profile.html
+    const profileInfoCard = document.getElementById('profileInfoCard');
+    profileInfoCard.addEventListener('click', () => {
+        window.location.href = 'profile.html';
+    });
+
+    // Handle profile image click to trigger file input
+    profileImg.addEventListener('click', () => {
+        const input = profileImg.querySelector('input[type="file"]');
+        if (input) input.click();
+    });
+
+    // Handle profile image upload
+    async function handleProfileImgUpload(e) {
+        const file = e.target.files[0];
+        if (!file || !currentUser) return;
+        profileImg.classList.add('uploading');
+        try {
+            // Upload to Firebase Storage
+            const filePath = `profile_photos/${currentUser.uid}/${Date.now()}_${file.name}`;
+            const imgRef = storageRef(storage, filePath);
+            await uploadBytes(imgRef, file);
+            const url = await getDownloadURL(imgRef);
+            // Update user profile
+            await updateProfile(currentUser, { photoURL: url });
+            await currentUser.reload();
+            renderProfile(currentUser);
+            alert('Profile photo updated!');
+        } catch (err) {
+            alert('Failed to upload profile photo: ' + err.message);
+        }
+        profileImg.classList.remove('uploading');
+    }
 
     // Dynamic multi-camera feed logic
     const feedsGrid = document.getElementById('feedsGrid');
@@ -347,4 +474,4 @@
     setupInitialCameras();
     </script>
 </body>
-</html> 
+</html>
