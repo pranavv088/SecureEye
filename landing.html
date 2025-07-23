@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureEye - Intelligent Surveillance</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary: #111111;
+            --secondary: #666666;
+            --accent: #FF3366;
+            --background: #FFFFFF;
+            --light-bg: #F8F9FA;
+            --border: #EEEEEE;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .hero {
+            padding: 60px 0 40px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            letter-spacing: -1px;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            color: var(--secondary);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        .features {
+            padding: 40px 0;
+            background: var(--light-bg);
+            min-height: 600px;
+            display: flex;
+            align-items: center;
+        }
+
+        .features-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 60px;
+            align-items: start;
+        }
+
+        .section-title {
+            text-align: left;
+            position: sticky;
+            top: 40px;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-title p {
+            color: var(--secondary);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .title-cta {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+        }
+
+        .feature {
+            padding: 30px;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+
+        .feature:hover::before {
+            opacity: 1;
+        }
+
+        .feature i {
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin-bottom: 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .feature:hover i {
+            transform: scale(1.1);
+        }
+
+        .feature h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .feature p {
+            color: var(--secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 30px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .primary-button {
+            background: var(--primary);
+            color: white;
+        }
+
+        .primary-button:hover {
+            background: #000;
+            transform: translateY(-2px);
+        }
+
+        .secondary-button {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        .secondary-button:hover {
+            background: var(--light-bg);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 1024px) {
+            .features-container {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .section-title {
+                text-align: center;
+                position: static;
+            }
+
+            .title-cta {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .feature {
+                padding: 25px;
+            }
+
+            .section-title h2 {
+                font-size: 1.75rem;
+            }
+
+            .title-cta {
+                flex-direction: column;
+            }
+
+            .button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="container">
+            <h1>SecureEye</h1>
+            <p>Advanced surveillance technology meets intuitive design. Monitor, detect, and protect with unparalleled precision.</p>
+        </div>
+    </div>
+
+    <section class="features">
+        <div class="container">
+            <div class="features-container">
+                <div class="section-title">
+                    <h2>Intelligent Surveillance</h2>
+                    <p>A comprehensive security solution that adapts to your needs</p>
+                    <div class="title-cta">
+                        <a href="login.html" class="button primary-button">
+                            <i class="fas fa-play-circle"></i>
+                            Login                
+                        </a>
+                        <a href="signup.html" class="button secondary-button">
+                            <i class="fas fa-envelope"></i>
+                            Sign Up
+                        </a>
+                        <button id="googleContinue" type="button" style="background:#fff;color:#111;border:1px solid #eee;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:18px;font-weight:600;width:100%;max-width:260px;">
+                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Continue with Google
+                        </button>
+                    </div>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature">
+                        <i class="fas fa-camera"></i>
+                        <h3>Multi-Camera Support</h3>
+                        <p>Connect and monitor multiple camera feeds, including USB, IP, and CCTV cameras, all in one place.</p>
+                    </div>
+
+                    <div class="feature">
+                        <i class="fas fa-bolt"></i>
+                        <h3>Real-Time Activity Detection</h3>
+                        <p>Detect fire, intrusion, running, crowd, and violence instantly using advanced AI models.</p>
+                    </div>
+
+                    <div class="feature">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Alert System</h3>
+                        <p>Receive instant alerts via SMS, Email, Push Notifications, and Telegram/WhatsApp bots for unusual activities.</p>
+                    </div>
+
+                    <div class="feature">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <h3>UI Dashboard</h3>
+                        <p>Web-based dashboard to view all live feeds and activity logs with timestamps in a user-friendly interface.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+<script src="firebase-config.js" type="module"></script>
+<script type="module">
+import { getAuth, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
+import { app } from './firebase-config.js';
+
+const auth = getAuth(app);
+const googleBtn = document.getElementById('googleContinue');
+googleBtn.addEventListener('click', async function() {
+    const provider = new GoogleAuthProvider();
+    try {
+        await signInWithPopup(auth, provider);
+        alert('Google sign-in successful!');
+        window.location.href = 'home.html';
+    } catch (error) {
+        alert('Google sign-in failed: ' + error.message);
+    }
+});
+</script>
+</body>
+</html> 

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureEye Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap');
+        :root {
+            --primary: #111111;
+            --secondary: #666666;
+            --accent: #FF3366;
+            --background: #FFFFFF;
+            --light-bg: #F8F9FA;
+            --border: #EEEEEE;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        body {
+            background: var(--light-bg);
+            color: var(--primary);
+            min-height: 100vh;
+        }
+        header {
+            background: var(--background);
+            border-bottom: 1px solid var(--border);
+            padding: 18px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            font-size: 1.7rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            color: var(--primary);
+        }
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        nav a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        nav a:hover {
+            color: var(--accent);
+        }
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .profile-img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .dashboard {
+            display: flex;
+            gap: 32px;
+            padding: 32px;
+        }
+        .feeds-section {
+            flex: 2;
+        }
+        .feeds-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+        .feeds-header h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .feeds-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .feed-card {
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 220px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        }
+        .feed-placeholder {
+            width: 100%;
+            height: 160px;
+            background: var(--light-bg);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--secondary);
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+        .logs-section {
+            flex: 1;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px 16px;
+            min-width: 280px;
+            max-width: 340px;
+            height: fit-content;
+        }
+        .logs-header {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+        .log-list {
+            list-style: none;
+            max-height: 350px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .log-item {
+            font-size: 0.98rem;
+            color: var(--secondary);
+            margin-bottom: 10px;
+            border-left: 3px solid var(--accent);
+            padding-left: 10px;
+        }
+        .logout-btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 18px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background 0.2s;
+        }
+        .logout-btn:hover {
+            background: #d12b5a;
+        }
+        @media (max-width: 900px) {
+            .dashboard {
+                flex-direction: column;
+                gap: 24px;
+                padding: 18px;
+            }
+            .logs-section {
+                max-width: 100%;
+                min-width: unset;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">SecureEye</div>
+        <nav>
+            <a href="#">Dashboard</a>
+            <a href="#">Settings</a>
+        </nav>
+        <div class="profile">
+            <div class="profile-img"><i class="fas fa-user"></i></div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </header>
+    <main class="dashboard">
+        <section class="feeds-section">
+            <div class="feeds-header">
+                <h2>Live Camera Feeds</h2>
+                <button id="addCameraBtn" style="background:var(--primary);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;">+ Add Camera</button>
+            </div>
+            <div class="feeds-grid" id="feedsGrid">
+                <!-- Camera feeds will be dynamically inserted here -->
+            </div>
+        </section>
+        <aside class="logs-section">
+            <div class="logs-header">Activity Logs</div>
+            <ul class="log-list">
+                <li class="log-item">[12:01] Intrusion detected on Camera 1</li>
+                <li class="log-item">[11:45] Fire detected on Camera 2</li>
+                <li class="log-item">[11:30] Camera 1 connected</li>
+                <li class="log-item">[11:00] System started</li>
+            </ul>
+        </aside>
+    </main>
+    <script src="firebase-config.js" type="module"></script>
+    <script type="module">
+    import { getAuth, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
+    import { app } from './firebase-config.js';
+    const auth = getAuth(app);
+    const logoutBtn = document.getElementById('logoutBtn');
+    logoutBtn.addEventListener('click', async () => {
+        await signOut(auth);
+        window.location.href = 'landing.html';
+    });
+    // Redirect to login if not authenticated
+    onAuthStateChanged(auth, user => {
+        if (!user) {
+            window.location.href = 'landing.html';
+        }
+    });
+
+    // Dynamic multi-camera feed logic
+    const feedsGrid = document.getElementById('feedsGrid');
+    const addCameraBtn = document.getElementById('addCameraBtn');
+    let videoDevices = [];
+    let activeCameras = [];
+
+    async function enumerateCameras() {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        return devices.filter(device => device.kind === 'videoinput');
+    }
+
+    function createCameraCard(idx, deviceId, label) {
+        const card = document.createElement('div');
+        card.className = 'feed-card';
+        const video = document.createElement('video');
+        video.width = 320;
+        video.height = 160;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.style.background = '#222';
+        video.style.borderRadius = '8px';
+        video.style.marginBottom = '10px';
+        video.id = `localVideo${idx+1}`;
+        const statusSpan = document.createElement('span');
+        statusSpan.innerHTML = `Status: <b id="camStatus${idx+1}" style="color:var(--accent);">Connecting...</b>`;
+        card.appendChild(video);
+        card.appendChild(statusSpan);
+        // Camera label
+        const labelDiv = document.createElement('div');
+        labelDiv.style.fontSize = '0.95rem';
+        labelDiv.style.color = '#666';
+        labelDiv.style.marginTop = '4px';
+        labelDiv.textContent = label || `Camera ${idx+1}`;
+        card.appendChild(labelDiv);
+        feedsGrid.appendChild(card);
+        return { video, statusElem: card.querySelector('b') };
+    }
+
+    async function startCameraForCard(videoElem, statusElem, deviceId) {
+        if (videoElem.srcObject) {
+            videoElem.srcObject.getTracks().forEach(track => track.stop());
+        }
+        try {
+            const constraints = { video: { deviceId: { exact: deviceId } } };
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            videoElem.srcObject = stream;
+            statusElem.textContent = 'Active';
+            statusElem.style.color = '#FF3366';
+            videoElem.style.display = '';
+        } catch (err) {
+            statusElem.textContent = 'Camera access denied or unavailable';
+            statusElem.style.color = '#d12b5a';
+            videoElem.style.display = 'none';
+        }
+    }
+
+    async function setupInitialCameras() {
+        videoDevices = await enumerateCameras();
+        feedsGrid.innerHTML = '';
+        activeCameras = [];
+        if (videoDevices.length === 0) {
+            const card = document.createElement('div');
+            card.className = 'feed-card';
+            card.innerHTML = '<div style="color:#d12b5a;">No camera found</div>';
+            feedsGrid.appendChild(card);
+        } else {
+            for (let i = 0; i < Math.min(2, videoDevices.length); i++) {
+                const { video, statusElem } = createCameraCard(i, videoDevices[i].deviceId, videoDevices[i].label);
+                activeCameras.push(videoDevices[i].deviceId);
+                startCameraForCard(video, statusElem, videoDevices[i].deviceId);
+            }
+        }
+    }
+
+    addCameraBtn.addEventListener('click', async () => {
+        if (videoDevices.length === 0) return;
+        if (activeCameras.length >= videoDevices.length) {
+            alert('All available cameras are already added.');
+            return;
+        }
+        const nextIdx = activeCameras.length;
+        const { video, statusElem } = createCameraCard(nextIdx, videoDevices[nextIdx].deviceId, videoDevices[nextIdx].label);
+        activeCameras.push(videoDevices[nextIdx].deviceId);
+        startCameraForCard(video, statusElem, videoDevices[nextIdx].deviceId);
+    });
+
+    setupInitialCameras();
+    </script>
+</body>
+</html> 

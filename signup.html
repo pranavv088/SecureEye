@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - SecureEye</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+        :root {
+            --primary: #111111;
+            --secondary: #666666;
+            --accent: #FF3366;
+            --background: #FFFFFF;
+            --light-bg: #F8F9FA;
+            --border: #EEEEEE;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        body {
+            background: var(--light-bg);
+            color: var(--primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .auth-container {
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+            padding: 40px 32px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .auth-container h2 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .auth-form label {
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+        .auth-form input {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            background: var(--light-bg);
+            transition: border 0.2s;
+        }
+        .auth-form input:focus {
+            border: 1.5px solid var(--accent);
+            outline: none;
+        }
+        .auth-form button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+        .auth-form button:hover {
+            background: var(--accent);
+            transform: translateY(-2px);
+        }
+        .auth-links {
+            margin-top: 18px;
+            text-align: center;
+        }
+        .auth-links a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            transition: text-decoration 0.2s;
+        }
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h2>Sign Up for SecureEye</h2>
+        <!-- Google signup button removed -->
+        <form class="auth-form" id="signupForm">
+            <div>
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required autocomplete="username">
+            </div>
+            <div>
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="new-password">
+            </div>
+            <div>
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required autocomplete="new-password">
+            </div>
+            <button type="submit">Sign Up</button>
+        </form>
+        <div class="auth-links">
+            <span>Already have an account? <a href="login.html">Login</a></span>
+        </div>
+    </div>
+    <script src="firebase-config.js" type="module"></script>
+    <script type="module">
+    import { getAuth, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
+    import { app } from './firebase-config.js';
+
+    const auth = getAuth(app);
+    const form = document.getElementById('signupForm');
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const email = form.email.value;
+        const password = form.password.value;
+        const confirmPassword = form.confirmPassword.value;
+        if (password !== confirmPassword) {
+            alert('Passwords do not match!');
+            return;
+        }
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            alert('Signup successful! You can now log in.');
+            // Optionally redirect to login page
+            // window.location.href = 'login.html';
+        } catch (error) {
+            alert('Signup failed: ' + error.message);
+        }
+    });
+    </script>
+</body>
+</html> 
+ 
