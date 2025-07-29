@@ -100,6 +100,7 @@
     </style>
 </head>
 <body>
+    <a href="settings.html" style="position:absolute;top:20px;right:30px;font-size:1.5rem;color:#111;text-decoration:none;z-index:1000;" title="Settings"><i class="fas fa-cog"></i></a>
     <div class="auth-container">
         <h2>Login to SecureEye</h2>
         <form class="auth-form" id="loginForm">
@@ -131,8 +132,8 @@
         try {
             await signInWithEmailAndPassword(auth, email, password);
             alert('Login successful!');
-            // Redirect to dashboard or home page
-            // window.location.href = 'dashboard.html';
+
+ window.location.href = 'home.html';
         } catch (error) {
             alert('Login failed: ' + error.message);
         }
