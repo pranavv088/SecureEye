@@ -467,6 +467,72 @@
             gap: 12px;
         }
 
+        .help-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .help-tooltip .help-icon {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--primary);
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .help-tooltip .help-icon:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .help-tooltip .tooltip-content {
+            visibility: hidden;
+            width: 280px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            text-align: left;
+            border-radius: 8px;
+            padding: 16px;
+            position: absolute;
+            z-index: 1000;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .help-tooltip .tooltip-content::after {
+            content: "";
+            position: absolute;
+            bottom: 100%;
+            right: 20px;
+            border: 8px solid transparent;
+            border-bottom-color: rgba(0, 0, 0, 0.9);
+        }
+
+        .help-tooltip:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .shortcut {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+
         .toggle-logs-btn {
             background: linear-gradient(135deg, var(--info) 0%, #42a5f5 100%);
             color: #fff;
@@ -972,6 +1038,8 @@
             
             .header-actions {
                 gap: 8px;
+                flex-wrap: wrap;
+                justify-content: center;
             }
             
             .feeds-grid {
@@ -985,6 +1053,29 @@
             .logs-panel {
                 width: 100%;
                 right: -100%;
+            }
+
+            .minimized-summary {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .camera-controls {
+                top: 8px;
+                right: 8px;
+            }
+
+            .minimize-btn,
+            .maximize-btn {
+                width: 24px;
+                height: 24px;
+                font-size: 0.7rem;
+            }
+
+            .help-tooltip .tooltip-content {
+                width: 250px;
+                right: -100px;
             }
         }
 
@@ -1083,6 +1174,21 @@
             <div class="feeds-header">
                 <h2><i class="fas fa-video"></i> Live Camera Feeds</h2>
                 <div class="header-actions">
+                    <div class="help-tooltip">
+                        <button class="help-icon" title="Keyboard Shortcuts">
+                            <i class="fas fa-question"></i>
+                        </button>
+                        <div class="tooltip-content">
+                            <strong>Keyboard Shortcuts:</strong><br><br>
+                            <span class="shortcut">Ctrl/Cmd + M</span> Minimize all cameras<br>
+                            <span class="shortcut">Ctrl/Cmd + R</span> Restore all cameras<br>
+                            <span class="shortcut">L</span> Toggle activity logs<br><br>
+                            <strong>Camera Controls:</strong><br>
+                            • Click <i class="fas fa-minus"></i> to minimize individual cameras<br>
+                            • Click <i class="fas fa-expand"></i> to restore minimized cameras<br>
+                            • Use "Restore All" button to restore all minimized cameras
+                        </div>
+                    </div>
                     <button id="toggleLogsBtn" class="toggle-logs-btn" title="Toggle Activity Logs">
                         <i class="fas fa-list-alt"></i>
                     </button>
@@ -1327,6 +1433,16 @@
             restoreAllCameras();
             showNotification('All cameras restored', 'success');
         }
+        
+        // L key to toggle logs panel
+        if (e.key.toLowerCase() === 'l' && !e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            if (logsPanel.classList.contains('active')) {
+                logsPanel.classList.remove('active');
+            } else {
+                logsPanel.classList.add('active');
+            }
+        }
     });
 
 
@@ -1471,14 +1587,14 @@
     // Minimize camera function
     function minimizeCamera(card, label) {
         card.classList.add('minimized');
-        addLog(`${label} minimized`, 'info');
+        logCameraActivity('Minimized', label);
         updateMinimizedSummary();
     }
 
     // Maximize camera function
     function maximizeCamera(card, label) {
         card.classList.remove('minimized');
-        addLog(`${label} maximized`, 'info');
+        logCameraActivity('Maximized', label);
         updateMinimizedSummary();
     }
 
