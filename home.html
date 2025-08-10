@@ -395,71 +395,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
 
-        .minimized-summary {
-            background: rgba(255, 255, 255, 0.9);
-            border: 2px solid var(--accent);
-            border-radius: 16px;
-            padding: 16px 20px;
-            margin-bottom: 24px;
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 4px 20px rgba(255, 51, 102, 0.1);
-            animation: slideDown 0.5s ease-out;
-        }
 
-        .minimized-summary.active {
-            display: flex;
-        }
-
-        .minimized-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .minimized-icon {
-            background: var(--accent);
-            color: white;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-        }
-
-        .minimized-text {
-            color: var(--primary);
-            font-weight: 500;
-        }
-
-        .minimized-count-badge {
-            background: var(--accent);
-            color: white;
-            border-radius: 20px;
-            padding: 4px 12px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .restore-all-btn {
-            background: linear-gradient(135deg, var(--accent) 0%, #ff4d7a 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .restore-all-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(255, 51, 102, 0.3);
-        }
 
         .header-actions {
             display: flex;
@@ -467,71 +403,7 @@
             gap: 12px;
         }
 
-        .help-tooltip {
-            position: relative;
-            display: inline-block;
-        }
 
-        .help-tooltip .help-icon {
-            background: rgba(255, 255, 255, 0.2);
-            color: var(--primary);
-            border: none;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: help;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-        }
-
-        .help-tooltip .help-icon:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.1);
-        }
-
-        .help-tooltip .tooltip-content {
-            visibility: hidden;
-            width: 280px;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            text-align: left;
-            border-radius: 8px;
-            padding: 16px;
-            position: absolute;
-            z-index: 1000;
-            top: 100%;
-            right: 0;
-            margin-top: 8px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.85rem;
-            line-height: 1.4;
-        }
-
-        .help-tooltip .tooltip-content::after {
-            content: "";
-            position: absolute;
-            bottom: 100%;
-            right: 20px;
-            border: 8px solid transparent;
-            border-bottom-color: rgba(0, 0, 0, 0.9);
-        }
-
-        .help-tooltip:hover .tooltip-content {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .shortcut {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 0.8rem;
-        }
 
         .toggle-logs-btn {
             background: linear-gradient(135deg, var(--info) 0%, #42a5f5 100%);
@@ -633,120 +505,6 @@
             position: relative;
             overflow: hidden;
             animation: scaleIn 0.6s ease-out forwards;
-        }
-
-        .feed-card.minimized {
-            min-height: 80px;
-            padding: 12px 20px;
-            transform: scale(0.98);
-        }
-
-        .feed-card.minimized:hover {
-            transform: scale(1);
-        }
-
-        .feed-card.minimized .camera-controls {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-        }
-
-        .feed-card.minimized video,
-        .feed-card.minimized .feed-placeholder {
-            display: none;
-            opacity: 0;
-            transform: scale(0.8);
-            transition: all 0.3s ease;
-        }
-
-        .feed-card:not(.minimized) video,
-        .feed-card:not(.minimized) .feed-placeholder {
-            opacity: 1;
-            transform: scale(1);
-            transition: all 0.3s ease;
-        }
-
-        .feed-card.minimized .camera-status {
-            margin-bottom: 0;
-        }
-
-        .feed-card.minimized .camera-label {
-            margin-top: 0;
-        }
-
-        .camera-controls {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            display: flex;
-            gap: 8px;
-            z-index: 10;
-        }
-
-        .minimize-btn,
-        .maximize-btn {
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.8rem;
-        }
-
-        .minimize-btn:hover,
-        .maximize-btn:hover {
-            background: rgba(0, 0, 0, 0.9);
-            transform: scale(1.1);
-        }
-
-        .minimize-btn {
-            display: flex;
-        }
-
-        .maximize-btn {
-            display: none;
-        }
-
-        .feed-card.minimized .minimize-btn {
-            display: none;
-        }
-
-        .feed-card.minimized .maximize-btn {
-            display: flex;
-        }
-
-        .minimized-indicator {
-            display: none;
-            align-items: center;
-            gap: 8px;
-            color: var(--accent);
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-
-        .feed-card.minimized .minimized-indicator {
-            display: flex;
-        }
-
-        .minimized-count {
-            background: var(--accent);
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            font-weight: 600;
         }
 
         .feed-card:nth-child(1) { animation-delay: 0.7s; }
@@ -1055,28 +813,9 @@
                 right: -100%;
             }
 
-            .minimized-summary {
-                flex-direction: column;
-                gap: 16px;
-                text-align: center;
-            }
 
-            .camera-controls {
-                top: 8px;
-                right: 8px;
-            }
 
-            .minimize-btn,
-            .maximize-btn {
-                width: 24px;
-                height: 24px;
-                font-size: 0.7rem;
-            }
 
-            .help-tooltip .tooltip-content {
-                width: 250px;
-                right: -100px;
-            }
         }
 
         /* Loading States */
@@ -1174,21 +913,6 @@
             <div class="feeds-header">
                 <h2><i class="fas fa-video"></i> Live Camera Feeds</h2>
                 <div class="header-actions">
-                    <div class="help-tooltip">
-                        <button class="help-icon" title="Keyboard Shortcuts">
-                            <i class="fas fa-question"></i>
-                        </button>
-                        <div class="tooltip-content">
-                            <strong>Keyboard Shortcuts:</strong><br><br>
-                            <span class="shortcut">Ctrl/Cmd + M</span> Minimize all cameras<br>
-                            <span class="shortcut">Ctrl/Cmd + R</span> Restore all cameras<br>
-                            <span class="shortcut">L</span> Toggle activity logs<br><br>
-                            <strong>Camera Controls:</strong><br>
-                            • Click <i class="fas fa-minus"></i> to minimize individual cameras<br>
-                            • Click <i class="fas fa-expand"></i> to restore minimized cameras<br>
-                            • Use "Restore All" button to restore all minimized cameras
-                        </div>
-                    </div>
                     <button id="toggleLogsBtn" class="toggle-logs-btn" title="Toggle Activity Logs">
                         <i class="fas fa-list-alt"></i>
                     </button>
@@ -1197,14 +921,7 @@
                     </button>
                 </div>
             </div>
-            <div class="minimized-summary" id="minimizedSummary">
-                <div class="minimized-info">
-                    <div class="minimized-icon"><i class="fas fa-video"></i></div>
-                    <div class="minimized-text">Live Camera Feeds</div>
-                    <div class="minimized-count-badge" id="minimizedCount">0</div>
-                </div>
-                <button class="restore-all-btn" id="restoreAllBtn">Restore All</button>
-            </div>
+
             <div class="feeds-grid" id="feedsGrid">
                 <!-- Camera feeds will be dynamically inserted here -->
             </div>
@@ -1238,9 +955,6 @@
     const profileImgInput = document.getElementById('profileImgInput');
     const profileInfo = document.getElementById('profileInfo');
     const logList = document.getElementById('logList');
-    const minimizedSummary = document.getElementById('minimizedSummary');
-    const minimizedCount = document.getElementById('minimizedCount');
-    const restoreAllBtn = document.getElementById('restoreAllBtn');
     let currentUser = null;
 
     // Enhanced profile rendering with animations
@@ -1388,52 +1102,10 @@
         logList.scrollTop = logList.scrollHeight;
     }
 
-    // Enhanced activity logging with camera state tracking
-    function logCameraActivity(action, cameraLabel, details = '') {
-        const timestamp = new Date().toLocaleString();
-        const logMessage = `${action}: ${cameraLabel}${details ? ` - ${details}` : ''}`;
-        addLog(logMessage, 'info');
-        
-        // Store in localStorage for persistence
-        const activityLog = {
-            timestamp,
-            action,
-            camera: cameraLabel,
-            details,
-            type: 'camera_activity'
-        };
-        
-        const existingLogs = JSON.parse(localStorage.getItem('cameraActivityLogs') || '[]');
-        existingLogs.unshift(activityLog);
-        
-        // Keep only last 100 activities
-        if (existingLogs.length > 100) {
-            existingLogs.splice(100);
-        }
-        
-        localStorage.setItem('cameraActivityLogs', JSON.stringify(existingLogs));
-    }
+
 
     // Keyboard shortcuts for camera controls
     document.addEventListener('keydown', (e) => {
-        // Ctrl/Cmd + M to minimize all cameras
-        if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
-            e.preventDefault();
-            const allCards = document.querySelectorAll('.feed-card:not(.minimized)');
-            allCards.forEach(card => {
-                const label = card.querySelector('.camera-label').textContent;
-                minimizeCamera(card, label);
-            });
-            showNotification('All cameras minimized', 'info');
-        }
-        
-        // Ctrl/Cmd + R to restore all cameras
-        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-            e.preventDefault();
-            restoreAllCameras();
-            showNotification('All cameras restored', 'success');
-        }
-        
         // L key to toggle logs panel
         if (e.key.toLowerCase() === 'l' && !e.ctrlKey && !e.metaKey) {
             e.preventDefault();
@@ -1497,27 +1169,6 @@
         card.className = 'feed-card';
         card.dataset.cameraId = deviceId;
         
-        // Add camera controls
-        const controls = document.createElement('div');
-        controls.className = 'camera-controls';
-        controls.innerHTML = `
-            <button class="minimize-btn" title="Minimize Camera">
-                <i class="fas fa-minus"></i>
-            </button>
-            <button class="maximize-btn" title="Maximize Camera">
-                <i class="fas fa-expand"></i>
-            </button>
-        `;
-        
-        // Add minimized indicator
-        const minimizedIndicator = document.createElement('div');
-        minimizedIndicator.className = 'minimized-indicator';
-        minimizedIndicator.innerHTML = `
-            <i class="fas fa-video"></i>
-            <span>Minimized</span>
-            <div class="minimized-count">1</div>
-        `;
-        
         const video = document.createElement('video');
         video.autoplay = true;
         video.playsInline = true;
@@ -1535,21 +1186,12 @@
         labelDiv.className = 'camera-label';
         labelDiv.textContent = label || `Camera ${idx+1}`;
         
-        card.appendChild(controls);
-        card.appendChild(minimizedIndicator);
         card.appendChild(video);
         card.appendChild(statusDiv);
         card.appendChild(labelDiv);
         
         feedsGrid.appendChild(card);
         addLog(`${label || `Camera ${idx+1}`} added to dashboard`, 'info');
-        
-        // Add minimize/maximize event listeners
-        const minimizeBtn = controls.querySelector('.minimize-btn');
-        const maximizeBtn = controls.querySelector('.maximize-btn');
-        
-        minimizeBtn.addEventListener('click', () => minimizeCamera(card, label));
-        maximizeBtn.addEventListener('click', () => maximizeCamera(card, label));
         
         return { 
             video, 
@@ -1584,48 +1226,7 @@
         }
     }
 
-    // Minimize camera function
-    function minimizeCamera(card, label) {
-        card.classList.add('minimized');
-        logCameraActivity('Minimized', label);
-        updateMinimizedSummary();
-    }
 
-    // Maximize camera function
-    function maximizeCamera(card, label) {
-        card.classList.remove('minimized');
-        logCameraActivity('Maximized', label);
-        updateMinimizedSummary();
-    }
-
-    // Update minimized summary
-    function updateMinimizedSummary() {
-        const minimizedCards = document.querySelectorAll('.feed-card.minimized');
-        const count = minimizedCards.length;
-        
-        if (count > 0) {
-            minimizedSummary.classList.add('active');
-            minimizedCount.textContent = count;
-        } else {
-            minimizedSummary.classList.remove('active');
-        }
-    }
-
-    // Restore all minimized cameras
-    function restoreAllCameras() {
-        const minimizedCards = document.querySelectorAll('.feed-card.minimized');
-        minimizedCards.forEach(card => {
-            card.classList.remove('minimized');
-        });
-        
-        if (minimizedCards.length > 0) {
-            addLog(`Restored ${minimizedCards.length} minimized camera(s)`, 'success');
-            updateMinimizedSummary();
-        }
-    }
-
-    // Add restore all event listener
-    restoreAllBtn.addEventListener('click', restoreAllCameras);
 
     // Enhanced initial camera setup
     async function setupInitialCameras() {
