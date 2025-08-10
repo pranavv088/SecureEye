@@ -242,7 +242,6 @@
         <div class="container">
             <h1>SecureEye</h1>
             <p>Advanced surveillance technology meets intuitive design. Monitor, detect, and protect with unparalleled precision.</p>
-            <a href="settings.html" style="position:absolute;top:20px;right:30px;font-size:1.5rem;color:#111;text-decoration:none;" title="Settings"><i class="fas fa-cog"></i></a>
         </div>
     </div>
 
@@ -261,6 +260,7 @@
                             <i class="fas fa-envelope"></i>
                             Sign Up
                         </a>
+
                         <button id="googleContinue" type="button" style="background:#fff;color:#111;border:1px solid #eee;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:18px;font-weight:600;width:100%;max-width:260px;">
                             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Continue with Google
                         </button>
@@ -302,6 +302,36 @@ import { app } from './firebase-config.js';
 
 const auth = getAuth(app);
 const googleBtn = document.getElementById('googleContinue');
+
+// Automatically request camera permission when page loads
+async function requestCameraPermission() {
+    try {
+        // Request camera permission
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: true, 
+            audio: false 
+        });
+        
+        // If permission granted, show success message
+        console.log('Camera access granted! You can now use surveillance features.');
+        
+        // Stop the stream since we just needed permission
+        stream.getTracks().forEach(track => track.stop());
+        
+    } catch (error) {
+        if (error.name === 'NotAllowedError') {
+            console.log('Camera access denied. Please allow camera access in your browser settings to use surveillance features.');
+        } else if (error.name === 'NotFoundError') {
+            console.log('No camera found. Please connect a camera device to use surveillance features.');
+        } else {
+            console.log('Error accessing camera: ' + error.message);
+        }
+    }
+}
+
+// Request camera permission when page loads
+document.addEventListener('DOMContentLoaded', requestCameraPermission);
+
 googleBtn.addEventListener('click', async function() {
     const provider = new GoogleAuthProvider();
     try {
