@@ -49,6 +49,6 @@ It integrates real-time AI-powered monitoring with an intuitive dashboard, provi
 
 1. **Clone the repository**  
    ```bash
-   git clone https://github.com/yourusername/SecureEye.git
+   git clone https://github.com/prannavv088/SecureEye.git
    cd SecureEye
 
