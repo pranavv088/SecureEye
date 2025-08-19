@@ -38,22 +38,70 @@
         }
 
         .hero {
-            padding: 60px 0 40px;
-            text-align: center;
+            padding: 60px 0 10px;
+            min-height: 10vh;
+            display: flex;
+            align-items: center;
+        }
+
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 60px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .hero-left {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-right {
+            text-align: left;
+        }
+
+        .logo-container {
+            margin-bottom: 2px;
+        }
+
+        .logo-image {
+            width: 200px;
+            height: auto;
+            max-height: 200px;
+            object-fit: contain;
+            filter: drop-shadow(0 8px 16px rgba(255, 51, 102, 0.2)) brightness(0.9) saturate(1.2);
+            transition: transform 0.3s ease;
+        }
+
+        .logo-image:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-fallback {
+            transition: transform 0.3s ease;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%) !important;
+        }
+
+        .logo-fallback:hover {
+            transform: scale(1.05);
         }
 
         .hero h1 {
-            font-size: 3rem;
+            font-size: 3.5rem;
             font-weight: 700;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             letter-spacing: -1px;
         }
 
         .hero p {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             color: var(--secondary);
-            max-width: 600px;
-            margin: 0 auto 40px;
+            max-width: 500px;
+            margin: 0 0 40px 0;
+            line-height: 1.7;
         }
 
         .features {
@@ -164,33 +212,102 @@
         .button {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px 30px;
-            border-radius: 4px;
+            justify-content: center;
+            gap: 12px;
+            padding: 14px 32px;
+            border-radius: 12px;
             text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            letter-spacing: 0.5px;
+        }
+
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .button:hover::before {
+            left: 100%;
         }
 
         .primary-button {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, #2c2c2c 100%);
             color: white;
+            border: 2px solid var(--primary);
         }
 
         .primary-button:hover {
-            background: #000;
-            transform: translateY(-2px);
+            background: linear-gradient(135deg, #000 0%, var(--primary) 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            border-color: #000;
         }
 
         .secondary-button {
-            background: transparent;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
             color: var(--primary);
-            border: 1px solid var(--primary);
+            border: 2px solid var(--accent);
+            box-shadow: 0 4px 12px rgba(255, 51, 102, 0.15);
         }
 
         .secondary-button:hover {
-            background: var(--light-bg);
-            transform: translateY(-2px);
+            background: linear-gradient(135deg, var(--accent) 0%, #ff4d7a 100%);
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 51, 102, 0.3);
+            border-color: var(--accent);
+        }
+
+        .google-button {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            color: #333;
+            border: 2px solid #e0e0e0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            font-weight: 500;
+            padding: 16px 24px;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .google-button:hover {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-color: #d0d0d0;
+        }
+
+        .google-button img {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .google-button:hover img {
+            transform: scale(1.1);
+        }
+
+        .button-icon {
+            font-size: 1.1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .button:hover .button-icon {
+            transform: scale(1.1);
         }
 
         @media (max-width: 1024px) {
@@ -209,9 +326,194 @@
             }
         }
 
+        /* Loading Animations */
+        .fade-in {
+            opacity: 0;
+            animation: fadeIn 0.8s ease-in-out forwards;
+        }
+
+        .slide-up {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: slideUp 0.6s ease-out forwards;
+        }
+
+        .slide-up-delay-1 {
+            animation-delay: 0.2s;
+        }
+
+        .slide-up-delay-2 {
+            animation-delay: 0.4s;
+        }
+
+        .slide-up-delay-3 {
+            animation-delay: 0.6s;
+        }
+
+        .slide-up-delay-4 {
+            animation-delay: 0.8s;
+        }
+
+        .scale-in {
+            opacity: 0;
+            transform: scale(0.9);
+            animation: scaleIn 0.5s ease-out forwards;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        .camera-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.05) 100%);
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            border-radius: 12px;
+            margin: 24px 0;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.1);
+            font-weight: 500;
+        }
+
+        .camera-status.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .camera-status.success {
+            background: rgba(76, 175, 80, 0.1);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+
+        .camera-status.error {
+            background: rgba(244, 67, 54, 0.1);
+            border-color: rgba(244, 67, 54, 0.5);
+        }
+
+        /* Keyframe Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Button Loading States */
+        .button.loading {
+            position: relative;
+            pointer-events: none;
+        }
+
+        .button.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Feature Card Animations */
+        .feature {
+            animation: slideUp 0.6s ease-out forwards;
+        }
+
+        .feature:nth-child(1) { animation-delay: 0.1s; }
+        .feature:nth-child(2) { animation-delay: 0.2s; }
+        .feature:nth-child(3) { animation-delay: 0.3s; }
+        .feature:nth-child(4) { animation-delay: 0.4s; }
+
         @media (max-width: 768px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                gap: 40px;
+                text-align: center;
+            }
+
+            .hero-left {
+                order: 1;
+            }
+
+            .hero-right {
+                order: 2;
+                text-align: center;
+            }
+
             .hero h1 {
                 font-size: 2.5rem;
+            }
+
+            .logo-image {
+                width: 150px;
+                max-height: 150px;
+            }
+
+            .hero p {
+                margin: 0 auto 40px auto;
             }
 
             .features-grid {
@@ -228,21 +530,39 @@
 
             .title-cta {
                 flex-direction: column;
+                gap: 12px;
             }
 
             .button {
                 width: 100%;
                 justify-content: center;
+                padding: 16px 24px;
+                font-size: 1rem;
+            }
+
+            .google-button {
+                margin-top: 8px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="hero">
+            <div class="hero">
         <div class="container">
-            <h1>SecureEye</h1>
-            <p>Advanced surveillance technology meets intuitive design. Monitor, detect, and protect with unparalleled precision.</p>
-            <a href="settings.html" style="position:absolute;top:20px;right:30px;font-size:1.5rem;color:#111;text-decoration:none;" title="Settings"><i class="fas fa-cog"></i></a>
+            <div class="hero-content">
+                <div class="hero-left">
+                    <div class="logo-container fade-in">
+                        <img src="/IMAGES/logo.png" alt="SecureEye Logo" class="logo-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="logo-fallback" style="display: none; width: 200px; height: 200px; background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); border-radius: 50%; align-items: center; justify-content: center; color: white; font-size: 4rem; font-weight: 700; box-shadow: 0 8px 16px rgba(255, 51, 102, 0.3);">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-right">
+                    <h1 class="fade-in">SecureEye</h1>
+                    <p class="slide-up slide-up-delay-1">Advanced surveillance technology meets intuitive design. Monitor, detect, and protect with unparalleled precision.</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -250,19 +570,28 @@
         <div class="container">
             <div class="features-container">
                 <div class="section-title">
-                    <h2>Intelligent Surveillance</h2>
-                    <p>A comprehensive security solution that adapts to your needs</p>
+                    <h2 class="slide-up slide-up-delay-2">Intelligent Surveillance</h2>
+                    <p class="slide-up slide-up-delay-3">A comprehensive security solution that adapts to your needs</p>
+                    
+                    <!-- Camera Status Indicator -->
+                    <div id="cameraStatus" class="camera-status">
+                        <div class="loading-spinner"></div>
+                        <span>Checking camera access...</span>
+                    </div>
+                    
                     <div class="title-cta">
-                        <a href="login.html" class="button primary-button">
-                            <i class="fas fa-play-circle"></i>
-                            Login                
+                        <a href="login.html" class="button primary-button scale-in">
+                            <i class="fas fa-sign-in-alt button-icon"></i>
+                            Get Started                
                         </a>
-                        <a href="signup.html" class="button secondary-button">
-                            <i class="fas fa-envelope"></i>
-                            Sign Up
+                        <a href="signup.html" class="button secondary-button scale-in">
+                            <i class="fas fa-user-plus button-icon"></i>
+                            Create Account
                         </a>
-                        <button id="googleContinue" type="button" style="background:#fff;color:#111;border:1px solid #eee;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:18px;font-weight:600;width:100%;max-width:260px;">
-                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Continue with Google
+
+                        <button id="googleContinue" type="button" class="button google-button scale-in">
+                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                            Continue with Google
                         </button>
                     </div>
                 </div>
@@ -302,13 +631,95 @@ import { app } from './firebase-config.js';
 
 const auth = getAuth(app);
 const googleBtn = document.getElementById('googleContinue');
+const cameraStatus = document.getElementById('cameraStatus');
+
+// Show camera status with animation
+function updateCameraStatus(message, type = 'loading') {
+    cameraStatus.classList.add('show');
+    cameraStatus.className = `camera-status show ${type}`;
+    
+    if (type === 'loading') {
+        cameraStatus.innerHTML = `
+            <div class="loading-spinner"></div>
+            <span>${message}</span>
+        `;
+    } else if (type === 'success') {
+        cameraStatus.innerHTML = `
+            <i class="fas fa-check-circle" style="color: #4CAF50; font-size: 1.2rem;"></i>
+            <span>${message}</span>
+        `;
+    } else if (type === 'error') {
+        cameraStatus.innerHTML = `
+            <i class="fas fa-exclamation-circle" style="color: #f44336; font-size: 1.2rem;"></i>
+            <span>${message}</span>
+        `;
+    }
+}
+
+// Automatically request camera permission when page loads
+async function requestCameraPermission() {
+    try {
+        updateCameraStatus('Requesting camera access...', 'loading');
+        
+        // Request camera permission
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: true, 
+            audio: false 
+        });
+        
+        // If permission granted, show success message
+        updateCameraStatus('Camera access granted! Ready for surveillance.', 'success');
+        console.log('Camera access granted! You can now use surveillance features.');
+        
+        // Stop the stream since we just needed permission
+        stream.getTracks().forEach(track => track.stop());
+        
+    } catch (error) {
+        if (error.name === 'NotAllowedError') {
+            updateCameraStatus('Camera access denied. Please allow camera access in browser settings.', 'error');
+            console.log('Camera access denied. Please allow camera access in your browser settings to use surveillance features.');
+        } else if (error.name === 'NotFoundError') {
+            updateCameraStatus('No camera found. Please connect a camera device.', 'error');
+            console.log('No camera found. Please connect a camera device to use surveillance features.');
+        } else {
+            updateCameraStatus('Error accessing camera. Please try again.', 'error');
+            console.log('Error accessing camera: ' + error.message);
+        }
+    }
+}
+
+// Add loading animation to buttons
+function addButtonLoading(button) {
+    button.classList.add('loading');
+    button.style.pointerEvents = 'none';
+}
+
+function removeButtonLoading(button) {
+    button.classList.remove('loading');
+    button.style.pointerEvents = 'auto';
+}
+
+// Request camera permission when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Add staggered animations to features
+    const features = document.querySelectorAll('.feature');
+    features.forEach((feature, index) => {
+        feature.style.animationDelay = `${0.5 + (index * 0.1)}s`;
+    });
+    
+    // Start camera permission request
+    setTimeout(requestCameraPermission, 1000);
+});
+
 googleBtn.addEventListener('click', async function() {
+    addButtonLoading(googleBtn);
     const provider = new GoogleAuthProvider();
     try {
         await signInWithPopup(auth, provider);
         alert('Google sign-in successful!');
         window.location.href = 'home.html';
     } catch (error) {
+        removeButtonLoading(googleBtn);
         alert('Google sign-in failed: ' + error.message);
     }
 });
