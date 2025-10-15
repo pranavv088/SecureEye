@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureEye - Test Page</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ddd;
+        }
+        .test-item.success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        .test-item.error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        .test-item.warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+        .status {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .success .status { color: #28a745; }
+        .error .status { color: #dc3545; }
+        .warning .status { color: #ffc107; }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .camera-test {
+            margin: 20px 0;
+            text-align: center;
+        }
+        video {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1><i class="fas fa-eye"></i> SecureEye Test Page</h1>
+        
+        <div id="testResults">
+            <div class="test-item">
+                <span class="status">⏳</span>
+                <span>Running tests...</span>
+            </div>
+        </div>
+        
+        <div class="camera-test">
+            <h3>Camera Test</h3>
+            <video id="testVideo" width="320" height="240" autoplay style="display: none;"></video>
+            <div id="cameraStatus">Click "Test Camera" to check camera access</div>
+            <button onclick="testCamera()">Test Camera</button>
+            <button onclick="stopCamera()" disabled id="stopBtn">Stop Camera</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="landing.html" style="color: #007bff; text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Go to SecureEye Landing Page
+            </a>
+        </div>
+    </div>
+
+    <script>
+        let currentStream = null;
+
+        function updateTestResult(testName, status, message) {
+            const container = document.getElementById('testResults');
+            const testItem = document.createElement('div');
+            testItem.className = `test-item ${status}`;
+            
+            let icon = '⏳';
+            if (status === 'success') icon = '✅';
+            else if (status === 'error') icon = '❌';
+            else if (status === 'warning') icon = '⚠️';
+            
+            testItem.innerHTML = `
+                <span class="status">${icon}</span>
+                <span><strong>${testName}:</strong> ${message}</span>
+            `;
+            
+            container.appendChild(testItem);
+        }
+
+        async function runTests() {
+            // Clear initial loading message
+            document.getElementById('testResults').innerHTML = '';
+            
+            // Test 1: Check if Firebase config exists
+            try {
+                const response = await fetch('firebase-config.js');
+                if (response.ok) {
+                    updateTestResult('Firebase Config', 'success', 'Configuration file found');
+                } else {
+                    updateTestResult('Firebase Config', 'error', 'Configuration file not found');
+                }
+            } catch (error) {
+                updateTestResult('Firebase Config', 'error', 'Cannot access configuration file');
+            }
+
+            // Test 2: Check if main pages exist
+            const pages = ['landing.html', 'home.html', 'login.html', 'signup.html'];
+            let pagesFound = 0;
+            
+            for (const page of pages) {
+                try {
+                    const response = await fetch(page);
+                    if (response.ok) {
+                        pagesFound++;
+                    }
+                } catch (error) {
+                    // Page not found
+                }
+            }
+            
+            if (pagesFound === pages.length) {
+                updateTestResult('Frontend Pages', 'success', `All ${pages.length} pages found`);
+            } else {
+                updateTestResult('Frontend Pages', 'warning', `${pagesFound}/${pages.length} pages found`);
+            }
+
+            // Test 3: Check WebSocket connection (backend)
+            try {
+                const ws = new WebSocket('ws://localhost:5000');
+                
+                ws.onopen = () => {
+                    updateTestResult('Backend Connection', 'success', 'WebSocket connection established');
+                    ws.close();
+                };
+                
+                ws.onerror = () => {
+                    updateTestResult('Backend Connection', 'warning', 'Backend not running (this is normal if backend is not started)');
+                };
+                
+                // Timeout after 3 seconds
+                setTimeout(() => {
+                    if (ws.readyState === WebSocket.CONNECTING) {
+                        ws.close();
+                        updateTestResult('Backend Connection', 'warning', 'Backend not running (this is normal if backend is not started)');
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                updateTestResult('Backend Connection', 'error', 'Cannot test WebSocket connection');
+            }
+
+            // Test 4: Check browser compatibility
+            const features = {
+                'WebRTC': typeof navigator.mediaDevices !== 'undefined',
+                'WebSocket': typeof WebSocket !== 'undefined',
+                'Local Storage': typeof localStorage !== 'undefined',
+                'ES6 Modules': typeof Symbol !== 'undefined'
+            };
+
+            let compatibleFeatures = 0;
+            for (const [feature, supported] of Object.entries(features)) {
+                if (supported) {
+                    compatibleFeatures++;
+                    updateTestResult(feature, 'success', 'Supported');
+                } else {
+                    updateTestResult(feature, 'error', 'Not supported');
+                }
+            }
+
+            if (compatibleFeatures === Object.keys(features).length) {
+                updateTestResult('Browser Compatibility', 'success', 'All features supported');
+            } else {
+                updateTestResult('Browser Compatibility', 'warning', `${compatibleFeatures}/${Object.keys(features).length} features supported`);
+            }
+        }
+
+        async function testCamera() {
+            const video = document.getElementById('testVideo');
+            const status = document.getElementById('cameraStatus');
+            const startBtn = event.target;
+            const stopBtn = document.getElementById('stopBtn');
+
+            try {
+                status.textContent = 'Requesting camera access...';
+                startBtn.disabled = true;
+
+                currentStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 320, height: 240 } 
+                });
+                
+                video.srcObject = currentStream;
+                video.style.display = 'block';
+                stopBtn.disabled = false;
+                
+                status.textContent = 'Camera access granted! Video feed is working.';
+                status.style.color = '#28a745';
+                
+            } catch (error) {
+                status.textContent = `Camera access denied: ${error.message}`;
+                status.style.color = '#dc3545';
+                startBtn.disabled = false;
+            }
+        }
+
+        function stopCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            
+            const video = document.getElementById('testVideo');
+            const status = document.getElementById('cameraStatus');
+            const startBtn = document.querySelector('button[onclick="testCamera()"]');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            video.style.display = 'none';
+            video.srcObject = null;
+            status.textContent = 'Camera stopped.';
+            status.style.color = '#6c757d';
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>

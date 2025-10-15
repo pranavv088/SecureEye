@@ -547,6 +547,78 @@
             box-shadow: 0 4px 16px rgba(0,0,0,0.2);
         }
 
+        /* Zone Editor Styles */
+        .zone-editor {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+        }
+
+        .zone-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        .zone-controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            z-index: 20;
+        }
+
+        .zone-controls button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            margin: 2px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .zone-controls button:hover {
+            background: #e02d5a;
+        }
+
+        .zone-controls button.active {
+            background: var(--success);
+        }
+
+        .zone-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 20;
+        }
+
+        .zone-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: move;
+            z-index: 15;
+        }
+
+        .zone-point:hover {
+            background: var(--success);
+            transform: scale(1.2);
+        }
+
         .feed-placeholder {
             width: 100%;
             height: 180px;
@@ -942,19 +1014,101 @@
     </main>
 
     <script src="firebase-config.js" type="module"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/firestore-service.js" type="module"></script>
+    <script src="js/notification-service.js" type="module"></script>
     <script type="module">
     import { getAuth, signOut, onAuthStateChanged, updateProfile } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
     import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-storage.js';
+    import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
     import { app } from './firebase-config.js';
+    import { firestoreService } from './js/firestore-service.js';
+    import { notificationService } from './js/notification-service.js';
 
     const auth = getAuth(app);
     const storage = getStorage(app);
+    const db = getFirestore(app);
     const logoutBtn = document.getElementById('logoutBtn');
     const profileImg = document.getElementById('profileImg');
     const profileImgInput = document.getElementById('profileImgInput');
     const profileInfo = document.getElementById('profileInfo');
     const logList = document.getElementById('logList');
     let currentUser = null;
+    
+    // WebSocket connection with error handling
+    let socket = null;
+    let isConnected = false;
+    
+    function initializeWebSocket() {
+        try {
+            socket = io('http://localhost:5000', {
+                timeout: 5000,
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000
+            });
+            
+            socket.on('connect', () => {
+                isConnected = true;
+                addLog('Connected to AI detection server', 'success');
+                showNotification('AI Detection Server Connected', 'success');
+            });
+
+            socket.on('disconnect', () => {
+                isConnected = false;
+                addLog('Disconnected from AI detection server', 'warning');
+                showNotification('AI Detection Server Disconnected', 'warning');
+            });
+
+            socket.on('connect_error', (error) => {
+                isConnected = false;
+                addLog(`WebSocket connection error: ${error.message}`, 'error');
+                showNotification('AI Detection Server Connection Failed', 'error');
+            });
+
+            socket.on('detection_alert', (data) => {
+                console.log('Detection alert received:', data);
+                handleDetectionAlert(data);
+            });
+
+            socket.on('zone_alert', (data) => {
+                console.log('Zone alert received:', data);
+                handleZoneAlert(data);
+            });
+
+            socket.on('zone_updated', (data) => {
+                console.log('Zone updated:', data);
+                addLog(`Zone updated for camera ${data.camera_id}: ${data.zone.width}x${data.zone.height}`, 'success');
+                showNotification('Zone Updated Successfully', 'success');
+            });
+
+            socket.on('zone_data', (data) => {
+                console.log('Zone data received:', data);
+                if (data.zone) {
+                    addLog(`Zone loaded for camera ${data.camera_id}`, 'info');
+                }
+            });
+
+            socket.on('detection_started', (data) => {
+                addLog(`AI detection started for camera ${data.camera_id}`, 'success');
+                showNotification(`AI Detection Started for Camera ${data.camera_id}`, 'success');
+            });
+
+            socket.on('detection_stopped', (data) => {
+                addLog(`AI detection stopped for camera ${data.camera_id}`, 'info');
+                showNotification(`AI Detection Stopped for Camera ${data.camera_id}`, 'info');
+            });
+
+            socket.on('error', (data) => {
+                addLog(`AI Server Error: ${data.message}`, 'error');
+                showNotification(`AI Server Error: ${data.message}`, 'error');
+            });
+            
+        } catch (error) {
+            console.error('WebSocket initialization failed:', error);
+            addLog('Failed to initialize WebSocket connection', 'error');
+        }
+    }
 
     // Enhanced profile rendering with animations
     function renderProfile(user) {
@@ -1153,8 +1307,19 @@
     // Enhanced camera enumeration
     async function enumerateCameras() {
         try {
+            // First request permission to access camera devices
+            await navigator.mediaDevices.getUserMedia({ video: true });
+            
             const devices = await navigator.mediaDevices.enumerateDevices();
-            return devices.filter(device => device.kind === 'videoinput');
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            
+            // If no devices found, try without permission first
+            if (videoDevices.length === 0) {
+                const allDevices = await navigator.mediaDevices.enumerateDevices();
+                return allDevices.filter(device => device.kind === 'videoinput');
+            }
+            
+            return videoDevices;
         } catch (error) {
             console.error('Error enumerating cameras:', error);
             addLog('Failed to enumerate cameras', 'error');
@@ -1185,9 +1350,77 @@
         labelDiv.className = 'camera-label';
         labelDiv.textContent = label || `Camera ${idx+1}`;
         
+        // AI Detection Controls
+        const aiControlsDiv = document.createElement('div');
+        aiControlsDiv.className = 'ai-controls';
+        aiControlsDiv.style.cssText = `
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: center;
+        `;
+        
+        const aiToggleBtn = document.createElement('button');
+        aiToggleBtn.innerHTML = '<i class="fas fa-brain"></i> Start AI';
+        aiToggleBtn.className = 'ai-toggle-btn';
+        aiToggleBtn.style.cssText = `
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        `;
+        
+        aiToggleBtn.addEventListener('click', () => {
+            if (aiToggleBtn.textContent.includes('Start')) {
+                startAIDetection(deviceId, `camera_${deviceId}`);
+                aiToggleBtn.innerHTML = '<i class="fas fa-stop"></i> Stop AI';
+                aiToggleBtn.style.background = 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)';
+            } else {
+                stopAIDetection(deviceId);
+                aiToggleBtn.innerHTML = '<i class="fas fa-brain"></i> Start AI';
+                aiToggleBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+            }
+        });
+        
+        aiControlsDiv.appendChild(aiToggleBtn);
+        
+        // Add zone editor controls
+        const zoneControlsDiv = document.createElement('div');
+        zoneControlsDiv.className = 'zone-controls';
+        zoneControlsDiv.style.cssText = `
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: center;
+        `;
+        
+        const editZoneBtn = document.createElement('button');
+        editZoneBtn.innerHTML = '<i class="fas fa-edit"></i> Edit Zone';
+        editZoneBtn.id = `editZone${idx+1}`;
+        editZoneBtn.style.cssText = `
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        `;
+        
+        editZoneBtn.addEventListener('click', () => toggleZoneEdit(idx+1, deviceId));
+        
+        zoneControlsDiv.appendChild(editZoneBtn);
+        
         card.appendChild(video);
         card.appendChild(statusDiv);
         card.appendChild(labelDiv);
+        card.appendChild(aiControlsDiv);
+        card.appendChild(zoneControlsDiv);
         
         feedsGrid.appendChild(card);
         addLog(`${label || `Camera ${idx+1}`} added to dashboard`, 'info');
@@ -1197,7 +1430,8 @@
             statusElem: card.querySelector('.status-indicator'), 
             statusText: card.querySelector('.camera-status span'),
             label: label || `Camera ${idx+1}`,
-            card: card
+            card: card,
+            aiToggleBtn: aiToggleBtn
         };
     }
 
@@ -1208,8 +1442,32 @@
         }
         
         try {
-            const constraints = { video: { deviceId: { exact: deviceId } } };
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            // Start with very basic constraints and gradually add specificity
+            let constraints = { video: true };
+            let stream;
+            
+            try {
+                // First try with basic video constraint
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                console.log('Basic video constraint successful');
+            } catch (basicError) {
+                console.log('Basic constraint failed, trying with specific device...');
+                
+                // Try with specific device but not exact
+                constraints = { video: { deviceId: deviceId } };
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    console.log('Device-specific constraint successful');
+                } catch (deviceError) {
+                    console.log('Device-specific failed, trying exact device...');
+                    
+                    // Last resort: try exact device
+                    constraints = { video: { deviceId: { exact: deviceId } } };
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    console.log('Exact device constraint successful');
+                }
+            }
+            
             videoElem.srcObject = stream;
             
             statusElem.classList.add('active');
@@ -1221,18 +1479,23 @@
             statusElem.classList.add('error');
             statusText.textContent = 'Access denied';
             videoElem.style.display = 'none';
-            addLog(`${label} access denied or unavailable`, 'error');
+            addLog(`${label} access denied or unavailable: ${err.name}`, 'error');
         }
     }
 
 
 
-    // Enhanced initial camera setup
+    // Enhanced initial camera setup with better error handling
     async function setupInitialCameras() {
         addCameraBtn.classList.add('loading');
         addCameraBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
         
         try {
+            // Check if getUserMedia is supported
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Camera access not supported in this browser');
+            }
+            
             videoDevices = await enumerateCameras();
             feedsGrid.innerHTML = '';
             activeCameras = [];
@@ -1243,20 +1506,58 @@
                         <i class="fas fa-video-slash"></i>
                         <h3>No Cameras Found</h3>
                         <p>No camera devices detected on your system. Please connect a camera and refresh the page.</p>
+                        <button onclick="setupInitialCameras()" style="margin-top: 15px; padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer;">
+                            <i class="fas fa-refresh"></i> Retry
+                        </button>
                     </div>
                 `;
                 addLog('No camera devices found', 'warning');
             } else {
+                addLog(`Found ${videoDevices.length} camera device(s)`, 'info');
+                
+                // Try to initialize cameras one by one
+                let successCount = 0;
                 for (let i = 0; i < Math.min(2, videoDevices.length); i++) {
-                    const { video, statusElem, statusText, label, card } = createCameraCard(i, videoDevices[i].deviceId, videoDevices[i].label);
-                    activeCameras.push(videoDevices[i].deviceId);
-                    startCameraForCard(video, statusElem, statusText, videoDevices[i].deviceId, label);
+                    try {
+                        const { video, statusElem, statusText, label, card } = createCameraCard(i, videoDevices[i].deviceId, videoDevices[i].label);
+                        activeCameras.push(videoDevices[i].deviceId);
+                        await startCameraForCard(video, statusElem, statusText, videoDevices[i].deviceId, label);
+                        successCount++;
+                    } catch (error) {
+                        console.error(`Failed to start camera ${i}:`, error);
+                        addLog(`Failed to start camera ${i + 1}: ${error.message}`, 'error');
+                    }
                 }
-                addLog(`Initialized ${Math.min(2, videoDevices.length)} camera(s)`, 'success');
+                
+                if (successCount === 0) {
+                    feedsGrid.innerHTML = `
+                        <div class="feed-card empty-state">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h3>Camera Access Denied</h3>
+                            <p>Please allow camera access in your browser settings and refresh the page.</p>
+                            <button onclick="setupInitialCameras()" style="margin-top: 15px; padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                <i class="fas fa-refresh"></i> Retry
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    addLog(`Successfully initialized ${successCount} camera(s)`, 'success');
+                }
             }
         } catch (error) {
             console.error('Setup error:', error);
-            addLog('Failed to setup cameras', 'error');
+            addLog(`Camera setup failed: ${error.message}`, 'error');
+            
+            feedsGrid.innerHTML = `
+                <div class="feed-card empty-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h3>Camera Setup Failed</h3>
+                    <p>${error.message}</p>
+                    <button onclick="setupInitialCameras()" style="margin-top: 15px; padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer;">
+                        <i class="fas fa-refresh"></i> Retry
+                    </button>
+                </div>
+            `;
         } finally {
             addCameraBtn.classList.remove('loading');
             addCameraBtn.innerHTML = '<i class="fas fa-plus"></i> Add Camera';
@@ -1281,12 +1582,334 @@
         startCameraForCard(video, statusElem, statusText, videoDevices[nextIdx].deviceId, label);
     });
 
+    // WebSocket event handlers (moved to initializeWebSocket function)
+    // These are now handled in the initializeWebSocket function above
+
+    // Handle detection alerts - ONLY MOTION
+    async function handleDetectionAlert(data) {
+        const { camera_id, detections, timestamp, mode } = data;
+        
+        // Only handle zone motion detections
+        if (detections.zone_motion && detections.zone_motion.detected) {
+            const detection = detections.zone_motion;
+            const confidence = Math.round(detection.confidence * 100);
+            
+            // Simple motion alert
+            addLog(`🚨 MOTION DETECTED! Camera ${camera_id}`, 'warning');
+            showNotification(`🚨 MOTION DETECTED!`, 'warning');
+            
+            // Play beep sound
+            playAlertSound();
+            
+            // Store detection event
+            await storeDetectionEvent(camera_id, 'motion', confidence, timestamp);
+        }
+    }
+
+    // Handle zone alerts - ONLY MOTION DETECTION WITH BEEP
+    function handleZoneAlert(data) {
+        const { camera_id, alert_type, count, confidence, zone, timestamp, beep } = data;
+        
+        if (alert_type === 'motion_detected') {
+            // Simple motion alert
+            addLog(`🚨 MOTION DETECTED! Camera ${camera_id}`, 'warning');
+            showNotification(`🚨 MOTION DETECTED!`, 'warning');
+            
+            // Always play beep for motion
+            playBeepSound();
+            
+            // Store simple motion event
+            storeZoneDetectionEvent(camera_id, count, confidence, zone, timestamp);
+        }
+    }
+
+    // Play beep sound for zone alerts
+    function playBeepSound() {
+        try {
+            // Create audio context for beep sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Configure beep sound
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // 800Hz frequency
+            oscillator.type = 'square';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            // Play beep
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+            
+            console.log('🔊 Beep sound played for zone alert');
+        } catch (error) {
+            console.log('Beep sound not available:', error);
+        }
+    }
+
+    // Store zone detection events
+    async function storeZoneDetectionEvent(cameraId, count, confidence, zone, timestamp) {
+        try {
+            if (currentUser && firestoreService) {
+                await firestoreService.addDetectionEvent({
+                    cameraId: cameraId,
+                    detectionType: 'human_zone',
+                    count: count,
+                    confidence: confidence,
+                    zone: zone,
+                    timestamp: timestamp,
+                    userId: currentUser.uid
+                });
+            }
+        } catch (error) {
+            console.error('Error storing zone detection event:', error);
+        }
+    }
+
+    // Zone Editor Functions
+    let currentZone = null;
+    let isEditingZone = false;
+    let zoneCanvas = null;
+    let zoneCtx = null;
+    let currentCameraId = null;
+
+    function toggleZoneEdit(cameraIdx, deviceId) {
+        const video = document.getElementById(`localVideo${cameraIdx}`);
+        const editBtn = document.getElementById(`editZone${cameraIdx}`);
+        
+        if (!isEditingZone) {
+            startZoneEdit(cameraIdx, deviceId, video);
+            editBtn.innerHTML = '<i class="fas fa-check"></i> Done';
+            editBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+        } else {
+            stopZoneEdit();
+            editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit Zone';
+            editBtn.style.background = 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)';
+        }
+    }
+
+    function startZoneEdit(cameraIdx, deviceId, video) {
+        if (!video || video.style.display === 'none') {
+            showNotification('Please start camera first', 'warning');
+            return;
+        }
+
+        isEditingZone = true;
+        currentCameraId = deviceId;
+        
+        // Create canvas overlay
+        zoneCanvas = document.createElement('canvas');
+        zoneCanvas.className = 'zone-canvas';
+        zoneCanvas.style.position = 'absolute';
+        zoneCanvas.style.top = '0';
+        zoneCanvas.style.left = '0';
+        zoneCanvas.style.zIndex = '10';
+        zoneCanvas.style.pointerEvents = 'auto';
+        zoneCanvas.style.border = '2px solid #FF3366';
+        
+        // Set canvas size to match video
+        const rect = video.getBoundingClientRect();
+        zoneCanvas.width = video.videoWidth || 640;
+        zoneCanvas.height = video.videoHeight || 480;
+        zoneCanvas.style.width = rect.width + 'px';
+        zoneCanvas.style.height = rect.height + 'px';
+        
+        zoneCtx = zoneCanvas.getContext('2d');
+        
+        // Add canvas to video container
+        const videoContainer = video.parentElement;
+        videoContainer.style.position = 'relative';
+        videoContainer.appendChild(zoneCanvas);
+        
+        // Add event listeners for drawing
+        zoneCanvas.addEventListener('mousedown', startDrawing);
+        zoneCanvas.addEventListener('mousemove', draw);
+        zoneCanvas.addEventListener('mouseup', stopDrawing);
+        
+        // Add instructions
+        showNotification('Click and drag to draw detection zone', 'info');
+        
+        // Load existing zone if available
+        loadZoneForCamera(deviceId);
+    }
+
+    function stopZoneEdit() {
+        if (zoneCanvas) {
+            zoneCanvas.remove();
+            zoneCanvas = null;
+            zoneCtx = null;
+        }
+        isEditingZone = false;
+        currentZone = null;
+        currentCameraId = null;
+    }
+
+    let isDrawing = false;
+    let startX, startY;
+
+    function startDrawing(e) {
+        if (!isEditingZone) return;
+        
+        isDrawing = true;
+        const rect = zoneCanvas.getBoundingClientRect();
+        startX = (e.clientX - rect.left) * (zoneCanvas.width / rect.width);
+        startY = (e.clientY - rect.top) * (zoneCanvas.height / rect.height);
+        
+        // Clear previous zone
+        zoneCtx.clearRect(0, 0, zoneCanvas.width, zoneCanvas.height);
+    }
+
+    function draw(e) {
+        if (!isDrawing || !isEditingZone) return;
+        
+        const rect = zoneCanvas.getBoundingClientRect();
+        const currentX = (e.clientX - rect.left) * (zoneCanvas.width / rect.width);
+        const currentY = (e.clientY - rect.top) * (zoneCanvas.height / rect.height);
+        
+        // Clear and redraw
+        zoneCtx.clearRect(0, 0, zoneCanvas.width, zoneCanvas.height);
+        
+        // Draw rectangle
+        zoneCtx.strokeStyle = '#FF3366';
+        zoneCtx.lineWidth = 3;
+        zoneCtx.setLineDash([5, 5]);
+        zoneCtx.strokeRect(startX, startY, currentX - startX, currentY - startY);
+        
+        // Draw semi-transparent fill
+        zoneCtx.fillStyle = 'rgba(255, 51, 102, 0.2)';
+        zoneCtx.fillRect(startX, startY, currentX - startX, currentY - startY);
+    }
+
+    function stopDrawing(e) {
+        if (!isDrawing || !isEditingZone) return;
+        
+        isDrawing = false;
+        const rect = zoneCanvas.getBoundingClientRect();
+        const endX = (e.clientX - rect.left) * (zoneCanvas.width / rect.width);
+        const endY = (e.clientY - rect.top) * (zoneCanvas.height / rect.height);
+        
+        // Save zone coordinates
+        currentZone = {
+            x: Math.min(startX, endX),
+            y: Math.min(startY, endY),
+            width: Math.abs(endX - startX),
+            height: Math.abs(endY - startY)
+        };
+        
+        // Send zone to backend
+        sendZoneToBackend(currentCameraId, currentZone);
+        
+        showNotification('Zone saved! Detection will monitor this area.', 'success');
+    }
+
+    function sendZoneToBackend(cameraId, zone) {
+        if (socket && isConnected) {
+            socket.emit('update_zone', {
+                camera_id: cameraId,
+                zone: zone
+            });
+            addLog(`Zone updated for camera ${cameraId}: ${zone.width}x${zone.height} at (${zone.x}, ${zone.y})`, 'info');
+        }
+    }
+
+    function loadZoneForCamera(cameraId) {
+        // Load saved zone from localStorage or backend
+        const savedZone = localStorage.getItem(`zone_${cameraId}`);
+        if (savedZone) {
+            currentZone = JSON.parse(savedZone);
+            drawSavedZone();
+        }
+    }
+
+    function drawSavedZone() {
+        if (!currentZone || !zoneCtx) return;
+        
+        zoneCtx.clearRect(0, 0, zoneCanvas.width, zoneCanvas.height);
+        zoneCtx.strokeStyle = '#FF3366';
+        zoneCtx.lineWidth = 3;
+        zoneCtx.setLineDash([5, 5]);
+        zoneCtx.strokeRect(currentZone.x, currentZone.y, currentZone.width, currentZone.height);
+        
+        zoneCtx.fillStyle = 'rgba(255, 51, 102, 0.2)';
+        zoneCtx.fillRect(currentZone.x, currentZone.y, currentZone.width, currentZone.height);
+    }
+
+    // Store detection events in Firestore using service
+    async function storeDetectionEvent(cameraId, detectionType, confidence, timestamp) {
+        try {
+            await firestoreService.addDetectionEvent(
+                cameraId, 
+                detectionType, 
+                confidence, 
+                currentUser?.uid,
+                { timestamp: timestamp }
+            );
+            
+            // Also add to system logs
+            await firestoreService.addSystemLog(
+                'warning',
+                `${detectionType.toUpperCase()} detected on Camera ${cameraId}`,
+                currentUser?.uid,
+                { cameraId, detectionType, confidence }
+            );
+        } catch (error) {
+            console.error('Error storing detection event:', error);
+        }
+    }
+
+    // Play alert sound
+    function playAlertSound() {
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
+            audio.volume = 0.3;
+            audio.play().catch(e => console.log('Audio play failed:', e));
+        } catch (error) {
+            console.log('Alert sound not available');
+        }
+    }
+
+    // Enhanced camera management with AI detection
+    async function startAIDetection(cameraId, streamUrl) {
+        if (!isConnected) {
+            showNotification('AI Detection Server not connected', 'error');
+            return;
+        }
+        
+        // Start real camera detection with zone monitoring
+        socket.emit('start_detection', {
+            camera_id: cameraId,
+            stream_url: streamUrl
+        });
+        
+        addLog(`Zone-based AI Detection started for camera ${cameraId}`, 'success');
+        showNotification('Zone Detection Started - Monitoring Active Zone', 'success');
+    }
+
+    async function stopAIDetection(cameraId) {
+        if (!isConnected) {
+            showNotification('AI Detection Server not connected', 'error');
+            return;
+        }
+        
+        socket.emit('stop_detection', {
+            camera_id: cameraId
+        });
+    }
+
+    // Enhanced camera card creation with AI controls (duplicate removed - using the first declaration)
+
     // Initialize dashboard
+    initializeWebSocket();
     setupInitialCameras();
     
     // Add welcome log
     setTimeout(() => {
         addLog('Dashboard loaded successfully', 'success');
+        addLog('AI Detection system ready', 'info');
     }, 1000);
     </script>
 </body>

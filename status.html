@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureEye - System Status</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .status-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        .status-card h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        .status-indicator {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .online { color: #4CAF50; }
+        .offline { color: #f44336; }
+        .warning { color: #ff9800; }
+        .links {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .links a {
+            display: inline-block;
+            margin: 10px;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .links a:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        .info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .info h3 {
+            margin-bottom: 15px;
+            color: #4CAF50;
+        }
+        .info ul {
+            list-style: none;
+            padding: 0;
+        }
+        .info li {
+            margin: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .info li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-container">
+        <h1><i class="fas fa-eye"></i> SecureEye System Status</h1>
+        
+        <div class="status-grid">
+            <div class="status-card">
+                <div class="status-indicator online" id="frontendStatus">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3>Frontend Server</h3>
+                <p>HTTP Server on Port 8000</p>
+                <p><strong>Status:</strong> <span id="frontendText">Online</span></p>
+            </div>
+            
+            <div class="status-card">
+                <div class="status-indicator" id="backendStatus">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <h3>Backend Server</h3>
+                <p>Flask API on Port 5000</p>
+                <p><strong>Status:</strong> <span id="backendText">Checking...</span></p>
+            </div>
+            
+            <div class="status-card">
+                <div class="status-indicator" id="websocketStatus">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <h3>WebSocket Connection</h3>
+                <p>Real-time Communication</p>
+                <p><strong>Status:</strong> <span id="websocketText">Checking...</span></p>
+            </div>
+        </div>
+        
+        <div class="info">
+            <h3><i class="fas fa-info-circle"></i> System Information</h3>
+            <ul>
+                <li>Frontend: HTML/CSS/JavaScript with Firebase integration</li>
+                <li>Backend: Python Flask with WebSocket support</li>
+                <li>AI Detection: Simulated detection engine (for testing)</li>
+                <li>Authentication: Firebase Auth with Google Sign-in</li>
+                <li>Database: Firestore for data storage</li>
+                <li>Notifications: Push notifications ready</li>
+            </ul>
+        </div>
+        
+        <div class="links">
+            <a href="landing.html"><i class="fas fa-home"></i> Landing Page</a>
+            <a href="home.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="test.html"><i class="fas fa-vial"></i> Test Page</a>
+            <a href="http://localhost:5000/api/health" target="_blank"><i class="fas fa-heartbeat"></i> API Health</a>
+        </div>
+    </div>
+
+    <script>
+        // Test backend connection
+        async function testBackend() {
+            try {
+                const response = await fetch('http://localhost:5000/api/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('backendStatus').innerHTML = '<i class="fas fa-check-circle"></i>';
+                    document.getElementById('backendStatus').className = 'status-indicator online';
+                    document.getElementById('backendText').textContent = 'Online';
+                    document.getElementById('backendText').innerHTML += `<br><small>Mode: ${data.mode}</small>`;
+                } else {
+                    throw new Error('Backend not responding');
+                }
+            } catch (error) {
+                document.getElementById('backendStatus').innerHTML = '<i class="fas fa-times-circle"></i>';
+                document.getElementById('backendStatus').className = 'status-indicator offline';
+                document.getElementById('backendText').textContent = 'Offline';
+            }
+        }
+
+        // Test WebSocket connection
+        function testWebSocket() {
+            try {
+                const ws = new WebSocket('ws://localhost:5000');
+                
+                ws.onopen = () => {
+                    document.getElementById('websocketStatus').innerHTML = '<i class="fas fa-check-circle"></i>';
+                    document.getElementById('websocketStatus').className = 'status-indicator online';
+                    document.getElementById('websocketText').textContent = 'Connected';
+                    ws.close();
+                };
+                
+                ws.onerror = () => {
+                    document.getElementById('websocketStatus').innerHTML = '<i class="fas fa-times-circle"></i>';
+                    document.getElementById('websocketStatus').className = 'status-indicator offline';
+                    document.getElementById('websocketText').textContent = 'Failed';
+                };
+                
+                // Timeout after 3 seconds
+                setTimeout(() => {
+                    if (ws.readyState === WebSocket.CONNECTING) {
+                        ws.close();
+                        document.getElementById('websocketStatus').innerHTML = '<i class="fas fa-times-circle"></i>';
+                        document.getElementById('websocketStatus').className = 'status-indicator offline';
+                        document.getElementById('websocketText').textContent = 'Timeout';
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                document.getElementById('websocketStatus').innerHTML = '<i class="fas fa-times-circle"></i>';
+                document.getElementById('websocketStatus').className = 'status-indicator offline';
+                document.getElementById('websocketText').textContent = 'Error';
+            }
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', () => {
+            testBackend();
+            testWebSocket();
+        });
+    </script>
+</body>
+</html>
