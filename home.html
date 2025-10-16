@@ -1302,7 +1302,7 @@
     const feedsGrid = document.getElementById('feedsGrid');
     const addCameraBtn = document.getElementById('addCameraBtn');
     let videoDevices = [];
-    let activeCameras = [];
+    let activeCameras = {};
 
     // Enhanced camera enumeration
     async function enumerateCameras() {
@@ -1416,6 +1416,24 @@
         
         zoneControlsDiv.appendChild(editZoneBtn);
         
+        // Add remove camera button
+        const removeBtn = document.createElement('button');
+        removeBtn.innerHTML = '<i class="fas fa-trash"></i> Remove';
+        removeBtn.style.cssText = `
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        `;
+        
+        removeBtn.addEventListener('click', () => removeCamera(deviceId, card));
+        
+        zoneControlsDiv.appendChild(removeBtn);
+        
         card.appendChild(video);
         card.appendChild(statusDiv);
         card.appendChild(labelDiv);
@@ -1498,7 +1516,7 @@
             
             videoDevices = await enumerateCameras();
             feedsGrid.innerHTML = '';
-            activeCameras = [];
+            activeCameras = {};
             
             if (videoDevices.length === 0) {
                 feedsGrid.innerHTML = `
@@ -1520,7 +1538,7 @@
                 for (let i = 0; i < Math.min(2, videoDevices.length); i++) {
                     try {
                         const { video, statusElem, statusText, label, card } = createCameraCard(i, videoDevices[i].deviceId, videoDevices[i].label);
-                        activeCameras.push(videoDevices[i].deviceId);
+                        activeCameras[videoDevices[i].deviceId] = true;
                         await startCameraForCard(video, statusElem, statusText, videoDevices[i].deviceId, label);
                         successCount++;
                     } catch (error) {
@@ -1543,6 +1561,9 @@
                 } else {
                     addLog(`Successfully initialized ${successCount} camera(s)`, 'success');
                 }
+                
+                // Update available cameras count
+                updateAvailableCamerasCount();
             }
         } catch (error) {
             console.error('Setup error:', error);
@@ -1564,6 +1585,65 @@
         }
     }
 
+    // Remove camera functionality
+    function removeCamera(deviceId, cardElement) {
+        // Confirm removal
+        if (!confirm('Are you sure you want to remove this camera?')) {
+            return;
+        }
+
+        try {
+            // Stop AI detection if running
+            stopAIDetection(deviceId);
+            
+            // Stop video stream
+            const video = cardElement.querySelector('video');
+            if (video && video.srcObject) {
+                const tracks = video.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+            
+            // Remove from DOM
+            cardElement.remove();
+            
+            // Remove from videoDevices array
+            videoDevices = videoDevices.filter(device => device.deviceId !== deviceId);
+            
+            // Remove from active cameras
+            delete activeCameras[deviceId];
+            
+            // Update available cameras count
+            updateAvailableCamerasCount();
+            
+            addLog(`Camera ${deviceId} removed successfully`, 'info');
+            showNotification('Camera removed successfully', 'success');
+            
+        } catch (error) {
+            console.error('Error removing camera:', error);
+            addLog(`Failed to remove camera: ${error.message}`, 'error');
+            showNotification('Failed to remove camera', 'error');
+        }
+    }
+
+    // Update available cameras count
+    function updateAvailableCamerasCount() {
+        const totalDevices = videoDevices.length;
+        const activeCount = Object.keys(activeCameras).length;
+        const availableCount = totalDevices - activeCount;
+        
+        // Update add camera button state
+        const addCameraBtn = document.getElementById('addCameraBtn');
+        if (availableCount === 0) {
+            addCameraBtn.disabled = true;
+            addCameraBtn.innerHTML = '<i class="fas fa-plus"></i> No Cameras Available';
+            addCameraBtn.style.opacity = '0.5';
+        } else {
+            addCameraBtn.disabled = false;
+            addCameraBtn.innerHTML = '<i class="fas fa-plus"></i> Add Camera';
+            addCameraBtn.style.opacity = '1';
+        }
+    }
+
     // Enhanced add camera functionality
     addCameraBtn.addEventListener('click', async () => {
         if (videoDevices.length === 0) {
@@ -1571,15 +1651,18 @@
             return;
         }
         
-        if (activeCameras.length >= videoDevices.length) {
+        if (Object.keys(activeCameras).length >= videoDevices.length) {
             showNotification('All available cameras are already added', 'warning');
             return;
         }
         
-        const nextIdx = activeCameras.length;
+        const nextIdx = Object.keys(activeCameras).length;
         const { video, statusElem, statusText, label, card } = createCameraCard(nextIdx, videoDevices[nextIdx].deviceId, videoDevices[nextIdx].label);
-        activeCameras.push(videoDevices[nextIdx].deviceId);
+        activeCameras[videoDevices[nextIdx].deviceId] = true;
         startCameraForCard(video, statusElem, statusText, videoDevices[nextIdx].deviceId, label);
+        
+        // Update available cameras count
+        updateAvailableCamerasCount();
     });
 
     // WebSocket event handlers (moved to initializeWebSocket function)
@@ -1879,10 +1962,15 @@
             return;
         }
         
+        // For local cameras, use camera index instead of URL
+        // Find the camera index from the videoDevices array
+        const cameraIndex = videoDevices.findIndex(device => device.deviceId === cameraId);
+        const stream_source = cameraIndex >= 0 ? cameraIndex : streamUrl;
+        
         // Start real camera detection with zone monitoring
         socket.emit('start_detection', {
             camera_id: cameraId,
-            stream_url: streamUrl
+            stream_url: stream_source
         });
         
         addLog(`Zone-based AI Detection started for camera ${cameraId}`, 'success');

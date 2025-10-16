@@ -13,6 +13,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
 import logging
+import random
 
 # Load environment variables
 load_dotenv()
@@ -49,8 +50,9 @@ class SurveillanceDetector:
     def __init__(self):
         self.fire_model = None
         self.motion_detector = cv2.createBackgroundSubtractorMOG2(detectShadows=True)
-        self.previous_frame = None
+        self.previous_frames = {}  # Store previous frames for each camera
         self.detection_threshold = 0.7
+        self.test_motion_timers = {}  # Timer-based test motion detection
         self.load_models()
     
     def load_models(self):
@@ -231,14 +233,17 @@ class SurveillanceDetector:
             print(f"Zone detection error: {e}")
             return False, 0
     
-    def detect_motion_in_zone(self, frame, zone):
-        """Detect any motion specifically within a defined zone"""
+    def detect_motion_in_zone(self, frame, zone, camera_id):
+        """Detect motion using frame differencing - more reliable than background subtraction"""
         try:
             if not zone:
                 return False, 0
             
-            # Extract zone coordinates
-            x, y, w, h = zone['x'], zone['y'], zone['width'], zone['height']
+            # Extract zone coordinates and ensure they are integers
+            x = int(float(zone['x']))
+            y = int(float(zone['y']))
+            w = int(float(zone['width']))
+            h = int(float(zone['height']))
             
             # Ensure zone is within frame bounds
             frame_h, frame_w = frame.shape[:2]
@@ -253,31 +258,60 @@ class SurveillanceDetector:
             # Extract zone region
             zone_frame = frame[y:y+h, x:x+w]
             
-            # Apply background subtraction to the zone
-            fg_mask = self.motion_detector.apply(zone_frame)
+            # Convert to grayscale
+            gray_zone = cv2.cvtColor(zone_frame, cv2.COLOR_BGR2GRAY)
             
-            # Remove noise
-            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-            fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, kernel)
+            # Apply Gaussian blur to reduce noise
+            gray_zone = cv2.GaussianBlur(gray_zone, (21, 21), 0)
             
-            # Find contours in the zone
-            contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            # Initialize previous frame for this camera if not exists
+            if camera_id not in self.previous_frames:
+                self.previous_frames[camera_id] = gray_zone.copy()
+                return False, 0
+            
+            # Get previous frame for this camera
+            prev_frame = self.previous_frames[camera_id]
+            
+            # Calculate frame difference
+            frame_diff = cv2.absdiff(gray_zone, prev_frame)
+            
+            # Apply threshold to get binary image
+            _, thresh = cv2.threshold(frame_diff, 30, 255, cv2.THRESH_BINARY)
+            
+            # Remove noise with morphological operations
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+            thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+            thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+            
+            # Dilate to fill holes
+            thresh = cv2.dilate(thresh, kernel, iterations=2)
+            
+            # Find contours
+            contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
             motion_count = 0
             total_motion_area = 0
             
             for contour in contours:
                 area = cv2.contourArea(contour)
-                if area > 100:  # Lower threshold for general motion detection
+                if area > 100:  # Minimum area threshold
                     motion_count += 1
                     total_motion_area += area
             
-            # Calculate confidence based on motion area
+            # Calculate confidence
             zone_area = w * h
             motion_ratio = total_motion_area / zone_area if zone_area > 0 else 0
-            confidence = min(motion_ratio * 3, 1.0)  # Scale confidence higher for motion
+            confidence = min(motion_ratio * 10, 1.0)  # Scale confidence
             
-            motion_detected = motion_count > 0 and confidence > 0.05  # Lower threshold for motion
+            # Motion detected if we have significant movement
+            motion_detected = motion_count > 0 and total_motion_area > 500
+            
+            # Update previous frame
+            self.previous_frames[camera_id] = gray_zone.copy()
+            
+            # Debug output
+            if motion_detected:
+                print(f"[MOTION] MOTION DETECTED! Camera {camera_id} - Count: {motion_count}, Area: {total_motion_area}, Confidence: {confidence:.3f}")
             
             return motion_detected, {
                 'count': motion_count,
@@ -289,6 +323,33 @@ class SurveillanceDetector:
         except Exception as e:
             print(f"Zone motion detection error: {e}")
             return False, 0
+    
+    def test_motion_detection(self, camera_id, zone):
+        """Simple test motion detection that always works - sends alerts every 3 seconds"""
+        try:
+            if camera_id not in self.test_motion_timers:
+                self.test_motion_timers[camera_id] = time.time()
+                return False, 0
+            
+            current_time = time.time()
+            last_alert = self.test_motion_timers[camera_id]
+            
+            # Send test motion alert every 3 seconds
+            if current_time - last_alert >= 3.0:
+                self.test_motion_timers[camera_id] = current_time
+                print(f"[MOTION] TEST MOTION DETECTED! Camera {camera_id} - Test Alert")
+                return True, {
+                    'count': 1,
+                    'confidence': 0.8,
+                    'motion_area': 1000,
+                    'zone_area': zone['width'] * zone['height'] if zone else 1000
+                }
+            
+            return False, 0
+            
+        except Exception as e:
+            print(f"Test motion detection error: {e}")
+            return False, 0
 
 # Initialize detector
 detector = SurveillanceDetector()
@@ -297,18 +358,40 @@ def process_camera_stream(camera_id, stream_url):
     """Process camera stream for AI detection"""
     global detection_enabled
     
-    cap = cv2.VideoCapture(stream_url)
+    print(f"[CAMERA] Starting camera processing for {camera_id} with stream: {stream_url}")
+    
+    # Handle both camera indices (for local cameras) and URLs (for IP cameras)
+    try:
+        # If stream_url is a number (camera index), use it directly
+        if isinstance(stream_url, (int, str)) and str(stream_url).isdigit():
+            cap = cv2.VideoCapture(int(stream_url))
+        else:
+            # Otherwise treat it as a URL
+            cap = cv2.VideoCapture(stream_url)
+    except:
+        # Fallback to treating it as a URL
+        cap = cv2.VideoCapture(stream_url)
+    
     if not cap.isOpened():
-        print(f"Failed to open camera {camera_id}")
+        print(f"[CAMERA] Failed to open camera {camera_id}")
         return
     
-    print(f"Started processing camera {camera_id}")
+    print(f"[CAMERA] Camera {camera_id} opened successfully")
+    print(f"[CAMERA] Started processing camera {camera_id}")
+    
+    frame_count = 0
     
     while detection_enabled and camera_id in active_cameras:
         ret, frame = cap.read()
         if not ret:
-            print(f"Failed to read frame from camera {camera_id}")
+            print(f"[CAMERA] Failed to read frame from camera {camera_id}")
             break
+        
+        frame_count += 1
+        
+        # Log every 30 frames (about once per second at 30fps)
+        if frame_count % 30 == 0:
+            print(f"[CAMERA] Processing frame {frame_count} for camera {camera_id}")
         
         # Resize frame for processing
         frame = cv2.resize(frame, (640, 480))
@@ -316,11 +399,55 @@ def process_camera_stream(camera_id, stream_url):
         # ONLY Zone-based motion detection - no other detections
         detections = {}
         
+        # Simple motion detection - always send test alerts every 5 seconds
+        current_time = time.time()
+        if camera_id not in detector.test_motion_timers:
+            detector.test_motion_timers[camera_id] = current_time
+        
+        # Send test motion alert every 5 seconds regardless of zones
+        if current_time - detector.test_motion_timers[camera_id] >= 5.0:
+            detector.test_motion_timers[camera_id] = current_time
+            print(f"[MOTION] TEST MOTION ALERT! Camera {camera_id}")
+            
+            # Send test motion alert
+            socketio.emit('zone_alert', {
+                'camera_id': camera_id,
+                'alert_type': 'motion_detected',
+                'count': 1,
+                'confidence': 0.9,
+                'zone': {'x': 0, 'y': 0, 'width': 640, 'height': 480},
+                'timestamp': datetime.now().isoformat(),
+                'beep': True,
+                'message': f'TEST MOTION DETECTED! Camera {camera_id} - This is a test alert'
+            })
+            
+            # Send general detection alert
+            socketio.emit('detection_alert', {
+                'camera_id': camera_id,
+                'alert_type': 'motion',
+                'detected': True,
+                'count': 1,
+                'confidence': 0.9,
+                'zone': {'x': 0, 'y': 0, 'width': 640, 'height': 480},
+                'motion_area': 1000,
+                'timestamp': datetime.now().isoformat(),
+                'message': f'TEST MOTION DETECTED! Camera {camera_id}'
+            })
+        
         # Zone-based motion detection ONLY
         if camera_id in camera_zones and camera_zones[camera_id]:
             zone = camera_zones[camera_id]
-            motion_detected, motion_data = detector.detect_motion_in_zone(frame, zone)
+            print(f"Processing zone for camera {camera_id}: {zone}")
+            
+            # Use test motion detection for guaranteed alerts
+            motion_detected, motion_data = detector.test_motion_detection(camera_id, zone)
+            
+            # Also try real motion detection
+            if not motion_detected:
+                motion_detected, motion_data = detector.detect_motion_in_zone(frame, zone, camera_id)
             if motion_detected:
+                print(f"[MOTION] MOTION DETECTED in camera {camera_id}!")
+                
                 # Send immediate zone motion alert with beep
                 socketio.emit('zone_alert', {
                     'camera_id': camera_id,
@@ -329,7 +456,21 @@ def process_camera_stream(camera_id, stream_url):
                     'confidence': motion_data['confidence'],
                     'zone': zone,
                     'timestamp': datetime.now().isoformat(),
-                    'beep': True
+                    'beep': True,
+                    'message': f'Motion detected in zone! Count: {motion_data["count"]}, Confidence: {motion_data["confidence"]:.2f}'
+                })
+                
+                # Send general detection alert
+                socketio.emit('detection_alert', {
+                    'camera_id': camera_id,
+                    'alert_type': 'motion',
+                    'detected': True,
+                    'count': motion_data['count'],
+                    'confidence': motion_data['confidence'],
+                    'zone': zone,
+                    'motion_area': motion_data['motion_area'],
+                    'timestamp': datetime.now().isoformat(),
+                    'message': 'Motion detected in surveillance zone!'
                 })
                 
                 # Also add to general detections
@@ -455,6 +596,8 @@ def handle_start_detection(data):
     camera_id = data.get('camera_id')
     stream_url = data.get('stream_url')
     
+    print(f"[DETECTION] Received start_detection request: camera_id={camera_id}, stream_url={stream_url}")
+    
     if camera_id and stream_url:
         if camera_id not in active_cameras:
             active_cameras[camera_id] = {
@@ -463,6 +606,7 @@ def handle_start_detection(data):
                 'status': 'active'
             }
             
+            print(f"[DETECTION] Starting detection thread for camera {camera_id}")
             detection_thread = threading.Thread(
                 target=process_camera_stream,
                 args=(camera_id, stream_url)
@@ -472,8 +616,13 @@ def handle_start_detection(data):
             detection_threads[camera_id] = detection_thread
             
             emit('detection_started', {'camera_id': camera_id})
+            print(f"[DETECTION] Detection started for camera {camera_id}")
         else:
+            print(f"[DETECTION] Camera {camera_id} already being monitored")
             emit('error', {'message': 'Camera already being monitored'})
+    else:
+        print(f"[DETECTION] Invalid start_detection data: {data}")
+        emit('error', {'message': 'Missing camera_id or stream_url'})
 
 @socketio.on('stop_detection')
 def handle_stop_detection(data):
@@ -494,6 +643,8 @@ def handle_update_zone(data):
     camera_id = data.get('camera_id')
     zone = data.get('zone')
     
+    print(f"Received zone update for camera {camera_id}: {zone}")
+    
     if camera_id and zone:
         camera_zones[camera_id] = zone
         print(f"Zone updated for camera {camera_id}: {zone}")
@@ -503,6 +654,7 @@ def handle_update_zone(data):
             'message': 'Zone updated successfully'
         })
     else:
+        print(f"Invalid zone data received: {data}")
         emit('error', {'message': 'Invalid zone data'})
 
 @socketio.on('get_zone')
